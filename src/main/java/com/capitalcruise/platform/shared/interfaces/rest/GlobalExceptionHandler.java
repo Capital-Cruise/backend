@@ -16,6 +16,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -62,6 +63,12 @@ public class GlobalExceptionHandler {
                 .map(this::formatFieldError)
                 .collect(Collectors.toList());
         return buildResponse(HttpStatus.BAD_REQUEST, "Validation failed", request.getRequestURI(), details);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResource> handleMalformedJson(HttpMessageNotReadableException exception,
+                                                             HttpServletRequest request) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "Malformed request", request.getRequestURI(), null);
     }
 
     @ExceptionHandler({BadCredentialsException.class, AuthenticationException.class})

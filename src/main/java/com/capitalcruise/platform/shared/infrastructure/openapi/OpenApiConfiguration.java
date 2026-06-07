@@ -44,4 +44,12 @@ public class OpenApiConfiguration {
                 .pathsToMatch("/api/v1/profiles/**")
                 .build();
     }
+
+    @Bean
+    public GroupedOpenApi commercialOpenApi() {
+        return GroupedOpenApi.builder()
+                .group("commercial")
+                .pathsToMatch("/api/v1/clients/**")
+                .build();
+    }
 }
