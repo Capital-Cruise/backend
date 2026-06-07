@@ -32,31 +32,31 @@ public class OpenApiConfiguration {
     @Bean
     public GroupedOpenApi iamOpenApi() {
         return GroupedOpenApi.builder()
-                .group("iam")
+                .group("Auth")
                 .pathsToMatch("/api/v1/auth/**")
                 .build();
     }
 
     @Bean
-    public GroupedOpenApi profilesOpenApi() {
+    public GroupedOpenApi clientsOpenApi() {
         return GroupedOpenApi.builder()
-                .group("profiles")
-                .pathsToMatch("/api/v1/profiles/**")
+                .group("Clients")
+                .pathsToMatch("/api/v1/clients/**")
                 .build();
     }
 
     @Bean
-    public GroupedOpenApi commercialOpenApi() {
+    public GroupedOpenApi vehiclesOpenApi() {
         return GroupedOpenApi.builder()
-                .group("commercial")
-                .pathsToMatch("/api/v1/clients/**", "/api/v1/vehicles/**")
+                .group("Vehicles")
+                .pathsToMatch("/api/v1/vehicles/**")
                 .build();
     }
 
     @Bean
     public GroupedOpenApi referenceDataOpenApi() {
         return GroupedOpenApi.builder()
-                .group("reference-data")
+                .group("Reference Data")
                 .pathsToMatch("/api/v1/reference/**")
                 .build();
     }
@@ -64,7 +64,7 @@ public class OpenApiConfiguration {
     @Bean
     public GroupedOpenApi creditOperationOpenApi() {
         return GroupedOpenApi.builder()
-                .group("credit-operation")
+                .group("Credit Operations")
                 .pathsToMatch("/api/v1/operations/**")
                 .build();
     }

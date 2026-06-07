@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/clients")
-@Tag(name = "Commercial Clients")
+@Tag(name = "Clients")
 public class ClientsController {
 
     private final ClientCommandService clientCommandService;
