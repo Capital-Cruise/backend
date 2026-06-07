@@ -4,7 +4,6 @@ import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.Capi
 import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.OperationRatePeriod;
 import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.OperationRateType;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 
 public class RateConverter {
 

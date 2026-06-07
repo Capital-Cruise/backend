@@ -33,7 +33,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -1030,7 +1029,7 @@ class LoanOperationsControllerIntegrationTest {
                 "https://example.com/car.png"
         ));
 
-        long draftOperationId = objectMapper.readTree(createOperation(token, client.getId(), vehicle.getId(), new BigDecimal("12.00"))
+        objectMapper.readTree(createOperation(token, client.getId(), vehicle.getId(), new BigDecimal("12.00"))
                 .andReturn()
                 .getResponse()
                 .getContentAsString()).get("id").asLong();

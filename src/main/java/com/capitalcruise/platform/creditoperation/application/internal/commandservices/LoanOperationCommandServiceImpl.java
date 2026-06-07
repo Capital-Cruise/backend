@@ -29,8 +29,6 @@ import com.capitalcruise.platform.creditoperation.infrastructure.persistence.jpa
 import com.capitalcruise.platform.creditoperation.infrastructure.persistence.jpa.repositories.OperationScheduleRepository;
 import com.capitalcruise.platform.commercial.domain.model.aggregates.Client;
 import com.capitalcruise.platform.commercial.domain.model.aggregates.Vehicle;
-import com.capitalcruise.platform.commercial.domain.model.valueobjects.Currency;
-import com.capitalcruise.platform.commercial.domain.model.valueobjects.DocumentType;
 import com.capitalcruise.platform.commercial.infrastructure.persistence.jpa.repositories.ClientRepository;
 import com.capitalcruise.platform.commercial.infrastructure.persistence.jpa.repositories.VehicleRepository;
 import com.capitalcruise.platform.iam.infrastructure.persistence.jpa.repositories.UserRepository;
@@ -41,9 +39,7 @@ import com.capitalcruise.platform.shared.domain.exceptions.ResourceNotFoundExcep
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

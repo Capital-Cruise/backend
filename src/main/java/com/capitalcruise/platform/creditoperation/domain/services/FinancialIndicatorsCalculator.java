@@ -9,16 +9,13 @@ import java.util.List;
 public class FinancialIndicatorsCalculator {
 
     private final InternalRateOfReturnCalculator internalRateOfReturnCalculator;
-    private final RateConverter rateConverter;
 
     public FinancialIndicatorsCalculator() {
-        this(new InternalRateOfReturnCalculator(), new RateConverter());
+        this(new InternalRateOfReturnCalculator());
     }
 
-    public FinancialIndicatorsCalculator(InternalRateOfReturnCalculator internalRateOfReturnCalculator,
-                                         RateConverter rateConverter) {
+    public FinancialIndicatorsCalculator(InternalRateOfReturnCalculator internalRateOfReturnCalculator) {
         this.internalRateOfReturnCalculator = internalRateOfReturnCalculator;
-        this.rateConverter = rateConverter;
     }
 
     public FinancialIndicators calculate(BigDecimal financedAmount,

@@ -3,13 +3,10 @@ package com.capitalcruise.platform.creditoperation.application.internal.queryser
 import com.capitalcruise.platform.creditoperation.domain.model.aggregates.LoanOperation;
 import com.capitalcruise.platform.creditoperation.domain.model.queries.GetAllLoanOperationsQuery;
 import com.capitalcruise.platform.creditoperation.domain.model.queries.GetLoanOperationByIdQuery;
-import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.OperationStatus;
 import com.capitalcruise.platform.creditoperation.domain.services.LoanOperationQueryService;
 import com.capitalcruise.platform.creditoperation.infrastructure.persistence.jpa.repositories.LoanOperationRepository;
-import com.capitalcruise.platform.commercial.domain.model.valueobjects.Currency;
 import com.capitalcruise.platform.shared.domain.exceptions.ResourceNotFoundException;
 import jakarta.persistence.criteria.Predicate;
-import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;

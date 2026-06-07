@@ -8,8 +8,6 @@ import com.capitalcruise.platform.creditoperation.domain.model.commands.SaveLoan
 import com.capitalcruise.platform.creditoperation.domain.services.LoanOperationCommandService;
 import com.capitalcruise.platform.creditoperation.domain.services.LoanOperationQueryService;
 import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.OperationStatus;
-import com.capitalcruise.platform.creditoperation.domain.model.entities.OperationAudit;
-import com.capitalcruise.platform.creditoperation.domain.model.entities.OperationIndicator;
 import com.capitalcruise.platform.creditoperation.domain.model.entities.OperationSchedule;
 import com.capitalcruise.platform.creditoperation.infrastructure.persistence.jpa.repositories.OperationChargeRepository;
 import com.capitalcruise.platform.creditoperation.infrastructure.persistence.jpa.repositories.OperationAuditRepository;
@@ -39,7 +37,6 @@ import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;

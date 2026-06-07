@@ -7,12 +7,10 @@ import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.Fina
 import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.FinancialIndicators;
 import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.GraceType;
 import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.LoanScheduleLine;
-import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.OperationRatePeriod;
 import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.OperationRateType;
 import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.ResolvedBalloon;
 import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.ResolvedDownPayment;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;

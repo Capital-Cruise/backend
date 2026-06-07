@@ -3,7 +3,6 @@ package com.capitalcruise.platform.commercial.application.internal.commandservic
 import com.capitalcruise.platform.commercial.domain.model.aggregates.Client;
 import com.capitalcruise.platform.commercial.domain.model.commands.CreateClientCommand;
 import com.capitalcruise.platform.commercial.domain.model.commands.UpdateClientCommand;
-import com.capitalcruise.platform.commercial.domain.model.valueobjects.ClientName;
 import com.capitalcruise.platform.commercial.domain.model.valueobjects.DocumentNumber;
 import com.capitalcruise.platform.commercial.domain.model.valueobjects.EmailAddress;
 import com.capitalcruise.platform.commercial.domain.services.ClientCommandService;

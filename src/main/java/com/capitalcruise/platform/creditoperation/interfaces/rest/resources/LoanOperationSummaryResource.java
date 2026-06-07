@@ -2,7 +2,6 @@ package com.capitalcruise.platform.creditoperation.interfaces.rest.resources;
 
 import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.OperationStatus;
 import com.capitalcruise.platform.commercial.domain.model.valueobjects.Currency;
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 
