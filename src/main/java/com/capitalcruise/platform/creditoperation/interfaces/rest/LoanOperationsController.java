@@ -2,16 +2,19 @@ package com.capitalcruise.platform.creditoperation.interfaces.rest;
 
 import com.capitalcruise.platform.creditoperation.domain.model.queries.GetAllLoanOperationsQuery;
 import com.capitalcruise.platform.creditoperation.domain.model.queries.GetLoanOperationByIdQuery;
+import com.capitalcruise.platform.creditoperation.domain.model.commands.CalculateLoanOperationCommand;
 import com.capitalcruise.platform.creditoperation.domain.services.LoanOperationCommandService;
 import com.capitalcruise.platform.creditoperation.domain.services.LoanOperationQueryService;
 import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.OperationStatus;
 import com.capitalcruise.platform.creditoperation.infrastructure.persistence.jpa.repositories.OperationChargeRepository;
 import com.capitalcruise.platform.creditoperation.infrastructure.persistence.jpa.repositories.OperationIndicatorRepository;
+import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationCalculationResultResource;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationDetailResource;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationPageResource;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationRequestResource;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.transform.LoanOperationPageResourceFromEntityAssembler;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.transform.LoanOperationRequestToCommandAssembler;
+import com.capitalcruise.platform.creditoperation.interfaces.rest.transform.LoanOperationCalculationResultResourceAssembler;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.transform.LoanOperationResourceFromEntityAssembler;
 import com.capitalcruise.platform.commercial.domain.model.valueobjects.Currency;
 import com.capitalcruise.platform.iam.infrastructure.persistence.jpa.repositories.UserRepository;
@@ -113,6 +116,16 @@ public class LoanOperationsController {
         var operation = commandService.handle(command);
         var detail = toDetailResource(operationId, userId, operation);
         return ResponseEntity.ok(detail);
+    }
+
+    @PostMapping("/{operationId}/calculate")
+    @Operation(summary = "Calculate loan operation")
+    public ResponseEntity<LoanOperationCalculationResultResource> calculate(@PathVariable Long operationId,
+                                                                            Authentication authentication,
+                                                                            @AuthenticationPrincipal UserDetails userDetails) {
+        Long userId = currentUserId(authentication, userDetails);
+        var result = commandService.calculate(new CalculateLoanOperationCommand(operationId, userId));
+        return ResponseEntity.ok(LoanOperationCalculationResultResourceAssembler.toResource(result));
     }
 
     private Long currentUserId(Authentication authentication, UserDetails userDetails) {
