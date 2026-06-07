@@ -14,7 +14,7 @@ env:
   PROJECT_ID: capital-cruise
   PROJECT_NUMBER: "482841496133"
   REGION: us-east4
-  SERVICE: capital-cruise-backend
+  SERVICE: capital-cruise-backend-source
   WORKLOAD_IDENTITY_PROVIDER: projects/482841496133/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider
   GCP_SERVICE_ACCOUNT: github-cloud-run-deployer@capital-cruise.iam.gserviceaccount.com
   RUNTIME_SERVICE_ACCOUNT: capital-cruise-backend-runner@capital-cruise.iam.gserviceaccount.com

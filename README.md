@@ -21,4 +21,5 @@ Java 21, Spring Boot, Spring Security JWT, Spring Data JPA, Flyway, PostgreSQL, 
 
 ## Deploy
 
-Cloud Run con deploy por source en `main-app`.
+Cloud Run por source en `main-app`.
+Servicio: `capital-cruise-backend-source`.

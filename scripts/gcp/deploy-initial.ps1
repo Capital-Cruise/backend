@@ -3,7 +3,7 @@ $ErrorActionPreference = "Stop"
 
 $ProjectId = "capital-cruise"
 $Region = "us-east4"
-$ServiceName = "capital-cruise-backend"
+$ServiceName = "capital-cruise-backend-source"
 function Assert-CommandExists {
     param([Parameter(Mandatory = $true)][string]$Name)
 
