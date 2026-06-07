@@ -29,7 +29,6 @@ import com.capitalcruise.platform.creditoperation.interfaces.rest.transform.Loan
 import com.capitalcruise.platform.commercial.domain.model.valueobjects.Currency;
 import com.capitalcruise.platform.iam.infrastructure.persistence.jpa.repositories.UserRepository;
 import com.capitalcruise.platform.shared.domain.exceptions.InvalidBusinessRuleException;
-import com.capitalcruise.platform.shared.domain.exceptions.InvalidStateTransitionException;
 import com.capitalcruise.platform.shared.domain.exceptions.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

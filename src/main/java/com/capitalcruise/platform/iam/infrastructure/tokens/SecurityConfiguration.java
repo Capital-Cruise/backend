@@ -1,8 +1,10 @@
 package com.capitalcruise.platform.iam.infrastructure.tokens;
 
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.Arrays;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -25,11 +27,15 @@ public class SecurityConfiguration {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final UserDetailsService userDetailsService;
+    private final String frontendAllowedOrigins;
 
     public SecurityConfiguration(JwtAuthenticationFilter jwtAuthenticationFilter,
-                                 UserDetailsService userDetailsService) {
+                                 UserDetailsService userDetailsService,
+                                 @Value("${frontend.allowed-origins:http://localhost:5173,http://localhost:5174,http://localhost:3000}")
+                                 String frontendAllowedOrigins) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.userDetailsService = userDetailsService;
+        this.frontendAllowedOrigins = frontendAllowedOrigins;
     }
 
     @Bean
@@ -45,6 +51,8 @@ public class SecurityConfiguration {
                                 response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden")))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/v3/api-docs.yaml").permitAll()
+                        .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                        .requestMatchers("/api/v1/health").permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .anyRequest().authenticated()
                 )
@@ -75,11 +83,7 @@ public class SecurityConfiguration {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:5173",
-                "http://localhost:5174",
-                "http://localhost:3000"
-        ));
+        configuration.setAllowedOrigins(parseAllowedOrigins(frontendAllowedOrigins));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
@@ -87,6 +91,17 @@ public class SecurityConfiguration {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    private List<String> parseAllowedOrigins(String allowedOriginsValue) {
+        if (allowedOriginsValue == null || allowedOriginsValue.isBlank()) {
+            return List.of();
+        }
+        String normalized = allowedOriginsValue.replace("[", "").replace("]", "");
+        return Arrays.stream(normalized.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isBlank())
+                .toList();
     }
 }
 

@@ -1,6 +1,5 @@
 package com.capitalcruise.platform.creditoperation.domain.services;
 
-import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.CapitalizationFrequency;
 import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.ExchangeRateMode;
 import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.FinancialCalculationRequest;
 import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.FinancialCalculationResult;
