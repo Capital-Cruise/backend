@@ -1,0 +1,52 @@
+package com.capitalcruise.platform.creditoperation.interfaces.rest.resources;
+
+import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.CapitalizationFrequency;
+import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.ExchangeRateMode;
+import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.GraceType;
+import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.OperationRatePeriod;
+import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.OperationRateType;
+import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.OperationStatus;
+import com.capitalcruise.platform.commercial.domain.model.valueobjects.Currency;
+import com.capitalcruise.platform.commercial.domain.model.valueobjects.DocumentType;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public record LoanOperationDetailResource(
+        Long id,
+        Long userId,
+        Long clientId,
+        Long vehicleId,
+        OperationStatus status,
+        Currency operationCurrency,
+        BigDecimal vehiclePrice,
+        BigDecimal downPaymentAmount,
+        BigDecimal downPaymentPercent,
+        Integer termMonths,
+        LocalDate startDate,
+        OperationRateType rateType,
+        BigDecimal rateValue,
+        OperationRatePeriod ratePeriod,
+        CapitalizationFrequency capitalizationFrequency,
+        GraceType graceType,
+        Integer gracePeriods,
+        BigDecimal balloonAmount,
+        BigDecimal balloonPercent,
+        ExchangeRateMode exchangeRateMode,
+        BigDecimal exchangeRateValue,
+        BigDecimal discountRate,
+        String clientSnapshotName,
+        DocumentType clientSnapshotDocumentType,
+        String clientSnapshotDocumentNumber,
+        String vehicleSnapshotLabel,
+        BigDecimal vehicleSnapshotPrice,
+        Currency vehicleSnapshotCurrency,
+        Instant calculatedAt,
+        Instant createdAt,
+        Instant updatedAt,
+        LoanOperationChargeResource charges,
+        LoanOperationIndicatorResource indicator
+) {
+}

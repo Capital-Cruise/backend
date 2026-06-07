@@ -1,0 +1,93 @@
+package com.capitalcruise.platform.creditoperation.interfaces.rest.transform;
+
+import com.capitalcruise.platform.creditoperation.domain.model.aggregates.LoanOperation;
+import com.capitalcruise.platform.creditoperation.domain.model.entities.OperationCharge;
+import com.capitalcruise.platform.creditoperation.domain.model.entities.OperationIndicator;
+import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationChargeResource;
+import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationDetailResource;
+import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationIndicatorResource;
+import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationSummaryResource;
+
+public class LoanOperationResourceFromEntityAssembler {
+
+    private LoanOperationResourceFromEntityAssembler() {
+    }
+
+    public static LoanOperationSummaryResource toSummaryResource(LoanOperation operation) {
+        return new LoanOperationSummaryResource(
+                operation.getId(),
+                operation.getStatus(),
+                operation.getClientSnapshotName(),
+                operation.getVehicleSnapshotLabel(),
+                operation.getOperationCurrency(),
+                operation.getTermMonths(),
+                operation.getStartDate(),
+                operation.getCreatedAt(),
+                operation.getUpdatedAt()
+        );
+    }
+
+    public static LoanOperationDetailResource toDetailResource(LoanOperation operation,
+                                                               OperationCharge charge,
+                                                               OperationIndicator indicator) {
+        return new LoanOperationDetailResource(
+                operation.getId(),
+                operation.getUserId(),
+                operation.getClientId(),
+                operation.getVehicleId(),
+                operation.getStatus(),
+                operation.getOperationCurrency(),
+                operation.getVehiclePrice(),
+                operation.getDownPaymentAmount(),
+                operation.getDownPaymentPercent(),
+                operation.getTermMonths(),
+                operation.getStartDate(),
+                operation.getRateType(),
+                operation.getRateValue(),
+                operation.getRatePeriod(),
+                operation.getCapitalizationFrequency(),
+                operation.getGraceType(),
+                operation.getGracePeriods(),
+                operation.getBalloonAmount(),
+                operation.getBalloonPercent(),
+                operation.getExchangeRateMode(),
+                operation.getExchangeRateValue(),
+                operation.getDiscountRate(),
+                operation.getClientSnapshotName(),
+                operation.getClientSnapshotDocumentType(),
+                operation.getClientSnapshotDocumentNumber(),
+                operation.getVehicleSnapshotLabel(),
+                operation.getVehicleSnapshotPrice(),
+                operation.getVehicleSnapshotCurrency(),
+                operation.getCalculatedAt(),
+                operation.getCreatedAt(),
+                operation.getUpdatedAt(),
+                charge != null ? new LoanOperationChargeResource(
+                        charge.getDesgravamenRate(),
+                        charge.getVehicleInsuranceRate(),
+                        charge.getPeriodicCommission(),
+                        charge.getPostageFee(),
+                        charge.getAdministrativeFee(),
+                        charge.getInitialCharges(),
+                        charge.getFinalCharges()
+                ) : null,
+                indicator != null ? new LoanOperationIndicatorResource(
+                        indicator.getFinancedAmount(),
+                        indicator.getNetDisbursement(),
+                        indicator.getMonthlyEffectiveRate(),
+                        indicator.getBaseInstallment(),
+                        indicator.getTotalInterest(),
+                        indicator.getTotalAmortization(),
+                        indicator.getTotalInsurance(),
+                        indicator.getTotalCharges(),
+                        indicator.getTotalPayable(),
+                        indicator.getNpv(),
+                        indicator.getIrrMonthly(),
+                        indicator.getIrrAnnual(),
+                        indicator.getEffectiveAnnualCost(),
+                        indicator.getIrrConverged(),
+                        indicator.getCalculationVersion()
+                ) : null
+        );
+    }
+}

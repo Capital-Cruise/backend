@@ -60,4 +60,12 @@ public class OpenApiConfiguration {
                 .pathsToMatch("/api/v1/reference/**")
                 .build();
     }
+
+    @Bean
+    public GroupedOpenApi creditOperationOpenApi() {
+        return GroupedOpenApi.builder()
+                .group("credit-operation")
+                .pathsToMatch("/api/v1/operations/**")
+                .build();
+    }
 }
