@@ -73,8 +73,21 @@ public class User extends AuditableModel {
         this.lastLoginAt = loginAt;
     }
 
+    public void activate() {
+        this.active = true;
+    }
+
     public void deactivate() {
         this.active = false;
+    }
+
+    public void updateIdentity(String username, String email) {
+        assignUsername(username);
+        assignEmail(email);
+    }
+
+    public void changePasswordHash(String passwordHash) {
+        assignPasswordHash(passwordHash);
     }
 
     private void assignUsername(String username) {

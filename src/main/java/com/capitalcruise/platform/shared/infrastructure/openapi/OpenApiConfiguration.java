@@ -6,20 +6,27 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springdoc.core.models.GroupedOpenApi;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.util.StringUtils;
 
 @Configuration
 public class OpenApiConfiguration {
 
+    private final String serverUrl;
+
+    public OpenApiConfiguration(@Value("${capital-cruise.openapi.server-url:}") String serverUrl) {
+        this.serverUrl = serverUrl;
+    }
+
     @Bean
     public OpenAPI openAPI() {
         final String securitySchemeName = "bearerAuth";
-        return new OpenAPI()
+        OpenAPI openAPI = new OpenAPI()
                 .info(new Info()
-                        .title("Capital Cruise Backend API")
-                        .description("Backend for Capital Cruise vehicle credit simulation platform with DDD, JWT and PostgreSQL")
-                        .version("1.0.0"))
+                        .title("Capital Cruise API")
+                        .version("v1"))
                 .addSecurityItem(new SecurityRequirement().addList(securitySchemeName))
                 .components(new Components().addSecuritySchemes(securitySchemeName,
                         new SecurityScheme()
@@ -27,6 +34,11 @@ public class OpenApiConfiguration {
                                 .type(SecurityScheme.Type.HTTP)
                                 .scheme("bearer")
                                 .bearerFormat("JWT")));
+
+        if (StringUtils.hasText(serverUrl)) {
+            openAPI.addServersItem(new io.swagger.v3.oas.models.servers.Server().url(serverUrl.trim()));
+        }
+        return openAPI;
     }
 
     @Bean

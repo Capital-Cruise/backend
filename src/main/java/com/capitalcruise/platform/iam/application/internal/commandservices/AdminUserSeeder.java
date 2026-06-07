@@ -31,6 +31,7 @@ public class AdminUserSeeder implements CommandLineRunner {
     private final String adminUsername;
     private final String adminEmail;
     private final String adminPassword;
+    private final boolean resetPassword;
 
     public AdminUserSeeder(UserRepository userRepository,
                            RoleRepository roleRepository,
@@ -38,7 +39,8 @@ public class AdminUserSeeder implements CommandLineRunner {
                            @Value("${capital-cruise.seed.admin-enabled:false}") boolean seedEnabled,
                            @Value("${capital-cruise.admin.username:admin}") String adminUsername,
                            @Value("${capital-cruise.admin.email:admin@capitalcruise.local}") String adminEmail,
-                           @Value("${capital-cruise.admin.password:}") String adminPassword) {
+                           @Value("${capital-cruise.admin.password:}") String adminPassword,
+                           @Value("${capital-cruise.admin.reset-password:false}") boolean resetPassword) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
@@ -46,6 +48,7 @@ public class AdminUserSeeder implements CommandLineRunner {
         this.adminUsername = adminUsername;
         this.adminEmail = adminEmail;
         this.adminPassword = adminPassword;
+        this.resetPassword = resetPassword;
     }
 
     @Override
@@ -68,12 +71,31 @@ public class AdminUserSeeder implements CommandLineRunner {
         User admin = userRepository.findByUsernameIgnoreCaseOrEmailIgnoreCase(normalizedUsername, normalizedEmail)
                 .orElseGet(() -> createAdmin(normalizedUsername, normalizedEmail, adminRole));
 
+        boolean identityChanged = !normalizedUsername.equals(admin.getUsername()) || !normalizedEmail.equals(admin.getEmail());
+        if (identityChanged) {
+            admin.updateIdentity(normalizedUsername, normalizedEmail);
+            userRepository.save(admin);
+            log.info("Admin user identity aligned to configured username and email");
+        }
+
+        if (!admin.isActive()) {
+            admin.activate();
+            userRepository.save(admin);
+            log.info("Admin user was inactive and has been reactivated: {}", admin.getUsername());
+        }
+
         if (admin.getRoles().stream().noneMatch(role -> RoleName.ROLE_ADMIN.equals(role.getName()))) {
             admin.getRoles().add(adminRole);
             userRepository.save(admin);
             log.info("Admin user already existed; ROLE_ADMIN assigned to {}", admin.getUsername());
         } else {
             log.info("Admin user already existed: {}", admin.getUsername());
+        }
+
+        if (resetPassword) {
+            admin.changePasswordHash(passwordEncoder.encode(adminPassword));
+            userRepository.save(admin);
+            log.info("Admin password reset enabled; password updated for {}", admin.getUsername());
         }
     }
 
