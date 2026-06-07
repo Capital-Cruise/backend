@@ -52,4 +52,12 @@ public class OpenApiConfiguration {
                 .pathsToMatch("/api/v1/clients/**", "/api/v1/vehicles/**")
                 .build();
     }
+
+    @Bean
+    public GroupedOpenApi referenceDataOpenApi() {
+        return GroupedOpenApi.builder()
+                .group("reference-data")
+                .pathsToMatch("/api/v1/reference/**")
+                .build();
+    }
 }
