@@ -1,8 +1,10 @@
 package com.capitalcruise.platform.creditoperation.application.internal.commandservices;
 
 import com.capitalcruise.platform.creditoperation.domain.model.commands.CalculateLoanOperationCommand;
+import com.capitalcruise.platform.creditoperation.domain.model.commands.DuplicateLoanOperationCommand;
 import com.capitalcruise.platform.creditoperation.domain.model.aggregates.LoanOperation;
 import com.capitalcruise.platform.creditoperation.domain.model.commands.CreateLoanOperationCommand;
+import com.capitalcruise.platform.creditoperation.domain.model.commands.SaveLoanOperationCommand;
 import com.capitalcruise.platform.creditoperation.domain.model.commands.UpdateLoanOperationCommand;
 import com.capitalcruise.platform.creditoperation.domain.model.entities.OperationAudit;
 import com.capitalcruise.platform.creditoperation.domain.model.entities.OperationCharge;
@@ -39,7 +41,9 @@ import com.capitalcruise.platform.shared.domain.exceptions.ResourceNotFoundExcep
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -310,6 +314,91 @@ public class LoanOperationCommandServiceImpl implements LoanOperationCommandServ
                 operation.getStatus(),
                 calculationResult
         );
+    }
+
+    @Override
+    @Transactional
+    public LoanOperation handle(SaveLoanOperationCommand command) {
+        LoanOperation operation = loanOperationRepository.findByIdAndUserId(command.operationId(), command.userId())
+                .orElseThrow(() -> new ResourceNotFoundException("Operation not found"));
+        if (operation.getStatus() != OperationStatus.CALCULATED) {
+            throw new InvalidStateTransitionException("Only calculated operations can be saved");
+        }
+        boolean hasSchedule = operationScheduleRepository.countByOperationId(operation.getId()) > 0;
+        boolean hasIndicators = operationIndicatorRepository.findByOperationId(operation.getId()).isPresent();
+        if (!hasSchedule || !hasIndicators) {
+            throw new InvalidStateTransitionException("Calculated operation must have schedule and indicators before saving");
+        }
+
+        operation.markSaved();
+        operation = loanOperationRepository.save(operation);
+        operationAuditRepository.save(new OperationAudit(
+                operation.getId(),
+                "SAVED",
+                "Operation saved successfully",
+                command.userId()
+        ));
+        return operation;
+    }
+
+    @Override
+    @Transactional
+    public LoanOperation handle(DuplicateLoanOperationCommand command) {
+        LoanOperation source = loanOperationRepository.findByIdAndUserId(command.operationId(), command.userId())
+                .orElseThrow(() -> new ResourceNotFoundException("Operation not found"));
+        if (source.getStatus() != OperationStatus.CALCULATED && source.getStatus() != OperationStatus.SAVED) {
+            throw new InvalidStateTransitionException("Only calculated or saved operations can be duplicated");
+        }
+
+        OperationCharge charge = operationChargeRepository.findByOperationId(source.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Operation charges not found"));
+        LoanOperation duplicate = new LoanOperation(
+                source.getUserId(),
+                source.getClientId(),
+                source.getVehicleId(),
+                source.getOperationCurrency(),
+                source.getVehiclePrice(),
+                source.getDownPaymentAmount(),
+                source.getDownPaymentPercent(),
+                source.getTermMonths(),
+                source.getStartDate(),
+                source.getRateType(),
+                source.getRateValue(),
+                source.getRatePeriod(),
+                source.getCapitalizationFrequency(),
+                source.getGraceType(),
+                source.getGracePeriods(),
+                source.getBalloonAmount(),
+                source.getBalloonPercent(),
+                source.getExchangeRateMode(),
+                source.getExchangeRateValue(),
+                source.getDiscountRate(),
+                source.getClientSnapshotName(),
+                source.getClientSnapshotDocumentType(),
+                source.getClientSnapshotDocumentNumber(),
+                source.getVehicleSnapshotLabel(),
+                source.getVehicleSnapshotPrice(),
+                source.getVehicleSnapshotCurrency()
+        );
+
+        duplicate = loanOperationRepository.save(duplicate);
+        operationChargeRepository.save(new OperationCharge(
+                duplicate.getId(),
+                charge.getDesgravamenRate(),
+                charge.getVehicleInsuranceRate(),
+                charge.getPeriodicCommission(),
+                charge.getPostageFee(),
+                charge.getAdministrativeFee(),
+                charge.getInitialCharges(),
+                charge.getFinalCharges()
+        ));
+        operationAuditRepository.save(new OperationAudit(
+                duplicate.getId(),
+                "DUPLICATED_DRAFT",
+                "Operation duplicated as draft",
+                command.userId()
+        ));
+        return duplicate;
     }
 
     private UserContext resolveContext(Long userId, Long clientId, Long vehicleId) {

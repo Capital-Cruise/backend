@@ -3,10 +3,13 @@ package com.capitalcruise.platform.creditoperation.interfaces.rest.transform;
 import com.capitalcruise.platform.creditoperation.domain.model.aggregates.LoanOperation;
 import com.capitalcruise.platform.creditoperation.domain.model.entities.OperationCharge;
 import com.capitalcruise.platform.creditoperation.domain.model.entities.OperationIndicator;
+import com.capitalcruise.platform.creditoperation.domain.model.entities.OperationSchedule;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationChargeResource;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationDetailResource;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationIndicatorResource;
+import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationCalculationScheduleResource;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationSummaryResource;
+import java.util.List;
 
 public class LoanOperationResourceFromEntityAssembler {
 
@@ -29,7 +32,8 @@ public class LoanOperationResourceFromEntityAssembler {
 
     public static LoanOperationDetailResource toDetailResource(LoanOperation operation,
                                                                OperationCharge charge,
-                                                               OperationIndicator indicator) {
+                                                               OperationIndicator indicator,
+                                                               List<OperationSchedule> schedules) {
         return new LoanOperationDetailResource(
                 operation.getId(),
                 operation.getUserId(),
@@ -87,7 +91,25 @@ public class LoanOperationResourceFromEntityAssembler {
                         indicator.getEffectiveAnnualCost(),
                         indicator.getIrrConverged(),
                         indicator.getCalculationVersion()
-                ) : null
+                ) : null,
+                schedules.stream()
+                        .map(schedule -> new LoanOperationCalculationScheduleResource(
+                                schedule.getInstallmentNumber(),
+                                schedule.getDueDate(),
+                                schedule.getOpeningBalance(),
+                                schedule.getPeriodicEffectiveRate(),
+                                schedule.getGraceTypeApplied(),
+                                schedule.getInterest(),
+                                schedule.getAmortization(),
+                                schedule.getBaseInstallment(),
+                                schedule.getInsuranceAmount(),
+                                schedule.getChargeAmount(),
+                                schedule.getBalloonPortion(),
+                                schedule.getTotalInstallment(),
+                                schedule.getClosingBalance(),
+                                schedule.getDebtorCashFlow()
+                        ))
+                        .toList()
         );
     }
 }

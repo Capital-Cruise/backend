@@ -876,6 +876,211 @@ class LoanOperationsControllerIntegrationTest {
                 .andExpect(jsonPath("$.message").value("Saved operations cannot be calculated directly"));
     }
 
+    @Test
+    void SaveCalculatedOperationShouldMoveToSavedAndAppendAudit() throws Exception {
+        String token = loginAsAdmin("admin-save", "StrongPass123");
+        Client client = clientRepository.save(Client.create(
+                "Mariano",
+                "Oblitas",
+                DocumentType.DNI,
+                "12345678",
+                "client@test.com",
+                "999999999",
+                "Lima",
+                new BigDecimal("3500.00"),
+                "VIP"
+        ));
+        Vehicle vehicle = vehicleRepository.save(Vehicle.create(
+                "Toyota",
+                "Corolla",
+                2025,
+                VehicleType.SEDAN,
+                new BigDecimal("80000.00"),
+                Currency.PEN,
+                "Sedan new model",
+                "https://example.com/car.png"
+        ));
+        long operationId = objectMapper.readTree(createOperation(token, client.getId(), vehicle.getId(), new BigDecimal("12.00"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString()).get("id").asLong();
+
+        mockMvc.perform(post("/api/v1/operations/{operationId}/calculate", operationId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/operations/{operationId}/save", operationId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SAVED"));
+
+        assertThat(loanOperationRepository.findById(operationId).orElseThrow().getStatus())
+                .isEqualTo(OperationStatus.SAVED);
+        assertThat(operationAuditRepository.findByOperationIdOrderByCreatedAtAsc(operationId))
+                .extracting("action")
+                .contains("SAVED");
+    }
+
+    @Test
+    void SaveWithoutCalculationShouldReturnConflict() throws Exception {
+        String token = loginAsAdmin("admin-save-invalid", "StrongPass123");
+        Client client = clientRepository.save(Client.create(
+                "Mariano",
+                "Oblitas",
+                DocumentType.DNI,
+                "12345678",
+                "client@test.com",
+                "999999999",
+                "Lima",
+                new BigDecimal("3500.00"),
+                "VIP"
+        ));
+        Vehicle vehicle = vehicleRepository.save(Vehicle.create(
+                "Toyota",
+                "Corolla",
+                2025,
+                VehicleType.SEDAN,
+                new BigDecimal("80000.00"),
+                Currency.PEN,
+                "Sedan new model",
+                "https://example.com/car.png"
+        ));
+        long operationId = objectMapper.readTree(createOperation(token, client.getId(), vehicle.getId(), new BigDecimal("12.00"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString()).get("id").asLong();
+
+        mockMvc.perform(post("/api/v1/operations/{operationId}/save", operationId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void DuplicateCalculatedOperationShouldCreateDraftWithoutArtifacts() throws Exception {
+        String token = loginAsAdmin("admin-duplicate", "StrongPass123");
+        Client client = clientRepository.save(Client.create(
+                "Mariano",
+                "Oblitas",
+                DocumentType.DNI,
+                "12345678",
+                "client@test.com",
+                "999999999",
+                "Lima",
+                new BigDecimal("3500.00"),
+                "VIP"
+        ));
+        Vehicle vehicle = vehicleRepository.save(Vehicle.create(
+                "Toyota",
+                "Corolla",
+                2025,
+                VehicleType.SEDAN,
+                new BigDecimal("80000.00"),
+                Currency.PEN,
+                "Sedan new model",
+                "https://example.com/car.png"
+        ));
+        long sourceOperationId = objectMapper.readTree(createOperation(token, client.getId(), vehicle.getId(), new BigDecimal("12.00"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString()).get("id").asLong();
+
+        mockMvc.perform(post("/api/v1/operations/{operationId}/calculate", sourceOperationId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+
+        var duplicateResponse = mockMvc.perform(post("/api/v1/operations/{operationId}/duplicate", sourceOperationId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("DRAFT"))
+                .andReturn();
+
+        long duplicatedOperationId = objectMapper.readTree(duplicateResponse.getResponse().getContentAsString())
+                .get("id")
+                .asLong();
+        assertThat(duplicatedOperationId).isNotEqualTo(sourceOperationId);
+        assertThat(operationScheduleRepository.countByOperationId(duplicatedOperationId)).isZero();
+        assertThat(operationIndicatorRepository.findByOperationId(duplicatedOperationId)).isEmpty();
+        assertThat(operationAuditRepository.findByOperationIdOrderByCreatedAtAsc(duplicatedOperationId))
+                .extracting("action")
+                .contains("DUPLICATED_DRAFT");
+    }
+
+    @Test
+    void ScheduleIndicatorsAuditAndSummaryShouldExposeLifecycleData() throws Exception {
+        String token = loginAsAdmin("admin-lifecycle", "StrongPass123");
+        Client client = clientRepository.save(Client.create(
+                "Mariano",
+                "Oblitas",
+                DocumentType.DNI,
+                "12345678",
+                "client@test.com",
+                "999999999",
+                "Lima",
+                new BigDecimal("3500.00"),
+                "VIP"
+        ));
+        Vehicle vehicle = vehicleRepository.save(Vehicle.create(
+                "Toyota",
+                "Corolla",
+                2025,
+                VehicleType.SEDAN,
+                new BigDecimal("80000.00"),
+                Currency.PEN,
+                "Sedan new model",
+                "https://example.com/car.png"
+        ));
+
+        long draftOperationId = objectMapper.readTree(createOperation(token, client.getId(), vehicle.getId(), new BigDecimal("12.00"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString()).get("id").asLong();
+
+        long calculatedOperationId = objectMapper.readTree(createOperation(token, client.getId(), vehicle.getId(), new BigDecimal("12.00"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString()).get("id").asLong();
+        mockMvc.perform(post("/api/v1/operations/{operationId}/calculate", calculatedOperationId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+
+        long savedOperationId = objectMapper.readTree(createOperation(token, client.getId(), vehicle.getId(), new BigDecimal("12.00"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString()).get("id").asLong();
+        mockMvc.perform(post("/api/v1/operations/{operationId}/calculate", savedOperationId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/operations/{operationId}/save", savedOperationId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/operations/{operationId}/schedule", calculatedOperationId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(36));
+
+        mockMvc.perform(get("/api/v1/operations/{operationId}/indicators", calculatedOperationId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.irrConverged").value(true))
+                .andExpect(jsonPath("$.totalPayable").exists());
+
+        mockMvc.perform(get("/api/v1/operations/{operationId}/audit", calculatedOperationId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(org.hamcrest.Matchers.greaterThan(0)));
+
+        mockMvc.perform(get("/api/v1/operations/summary")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalOperations").value(3))
+                .andExpect(jsonPath("$.countByStatus.DRAFT").value(1))
+                .andExpect(jsonPath("$.countByStatus.CALCULATED").value(1))
+                .andExpect(jsonPath("$.countByStatus.SAVED").value(1))
+                .andExpect(jsonPath("$.recentOperations.length()").value(3))
+                .andExpect(jsonPath("$.recentOperations[0].status").value("SAVED"));
+    }
+
     private org.springframework.test.web.servlet.ResultActions createOperation(String token,
                                                                                 Long clientId,
                                                                                 Long vehicleId,

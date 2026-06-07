@@ -3,13 +3,25 @@ package com.capitalcruise.platform.creditoperation.interfaces.rest;
 import com.capitalcruise.platform.creditoperation.domain.model.queries.GetAllLoanOperationsQuery;
 import com.capitalcruise.platform.creditoperation.domain.model.queries.GetLoanOperationByIdQuery;
 import com.capitalcruise.platform.creditoperation.domain.model.commands.CalculateLoanOperationCommand;
+import com.capitalcruise.platform.creditoperation.domain.model.commands.DuplicateLoanOperationCommand;
+import com.capitalcruise.platform.creditoperation.domain.model.commands.SaveLoanOperationCommand;
 import com.capitalcruise.platform.creditoperation.domain.services.LoanOperationCommandService;
 import com.capitalcruise.platform.creditoperation.domain.services.LoanOperationQueryService;
 import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.OperationStatus;
+import com.capitalcruise.platform.creditoperation.domain.model.entities.OperationAudit;
+import com.capitalcruise.platform.creditoperation.domain.model.entities.OperationIndicator;
+import com.capitalcruise.platform.creditoperation.domain.model.entities.OperationSchedule;
 import com.capitalcruise.platform.creditoperation.infrastructure.persistence.jpa.repositories.OperationChargeRepository;
+import com.capitalcruise.platform.creditoperation.infrastructure.persistence.jpa.repositories.OperationAuditRepository;
 import com.capitalcruise.platform.creditoperation.infrastructure.persistence.jpa.repositories.OperationIndicatorRepository;
+import com.capitalcruise.platform.creditoperation.infrastructure.persistence.jpa.repositories.OperationScheduleRepository;
+import com.capitalcruise.platform.creditoperation.infrastructure.persistence.jpa.repositories.LoanOperationRepository;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationCalculationResultResource;
+import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationAuditResource;
+import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationDashboardRecentOperationResource;
+import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationDashboardSummaryResource;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationDetailResource;
+import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationIndicatorsResource;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationPageResource;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationRequestResource;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.transform.LoanOperationPageResourceFromEntityAssembler;
@@ -19,10 +31,15 @@ import com.capitalcruise.platform.creditoperation.interfaces.rest.transform.Loan
 import com.capitalcruise.platform.commercial.domain.model.valueobjects.Currency;
 import com.capitalcruise.platform.iam.infrastructure.persistence.jpa.repositories.UserRepository;
 import com.capitalcruise.platform.shared.domain.exceptions.InvalidBusinessRuleException;
+import com.capitalcruise.platform.shared.domain.exceptions.InvalidStateTransitionException;
+import com.capitalcruise.platform.shared.domain.exceptions.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -49,18 +66,27 @@ public class LoanOperationsController {
     private final LoanOperationQueryService queryService;
     private final UserRepository userRepository;
     private final OperationChargeRepository operationChargeRepository;
+    private final OperationScheduleRepository operationScheduleRepository;
     private final OperationIndicatorRepository operationIndicatorRepository;
+    private final OperationAuditRepository operationAuditRepository;
+    private final LoanOperationRepository loanOperationRepository;
 
     public LoanOperationsController(LoanOperationCommandService commandService,
                                     LoanOperationQueryService queryService,
                                     UserRepository userRepository,
                                     OperationChargeRepository operationChargeRepository,
-                                    OperationIndicatorRepository operationIndicatorRepository) {
+                                    OperationScheduleRepository operationScheduleRepository,
+                                    OperationIndicatorRepository operationIndicatorRepository,
+                                    OperationAuditRepository operationAuditRepository,
+                                    LoanOperationRepository loanOperationRepository) {
         this.commandService = commandService;
         this.queryService = queryService;
         this.userRepository = userRepository;
         this.operationChargeRepository = operationChargeRepository;
+        this.operationScheduleRepository = operationScheduleRepository;
         this.operationIndicatorRepository = operationIndicatorRepository;
+        this.operationAuditRepository = operationAuditRepository;
+        this.loanOperationRepository = loanOperationRepository;
     }
 
     @PostMapping
@@ -128,6 +154,112 @@ public class LoanOperationsController {
         return ResponseEntity.ok(LoanOperationCalculationResultResourceAssembler.toResource(result));
     }
 
+    @PostMapping("/{operationId}/save")
+    @Operation(summary = "Save calculated loan operation")
+    public ResponseEntity<LoanOperationDetailResource> save(@PathVariable Long operationId,
+                                                            Authentication authentication,
+                                                            @AuthenticationPrincipal UserDetails userDetails) {
+        Long userId = currentUserId(authentication, userDetails);
+        var operation = commandService.handle(new SaveLoanOperationCommand(operationId, userId));
+        return ResponseEntity.ok(toDetailResource(operation.getId(), userId, operation));
+    }
+
+    @PostMapping("/{operationId}/duplicate")
+    @Operation(summary = "Duplicate loan operation")
+    public ResponseEntity<LoanOperationDetailResource> duplicate(@PathVariable Long operationId,
+                                                                 Authentication authentication,
+                                                                 @AuthenticationPrincipal UserDetails userDetails) {
+        Long userId = currentUserId(authentication, userDetails);
+        var operation = commandService.handle(new DuplicateLoanOperationCommand(operationId, userId));
+        return ResponseEntity.status(HttpStatus.CREATED).body(toDetailResource(operation.getId(), userId, operation));
+    }
+
+    @GetMapping("/{operationId}/schedule")
+    @Operation(summary = "Get loan operation schedule")
+    public ResponseEntity<List<com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationCalculationScheduleResource>> getSchedule(@PathVariable Long operationId,
+                                                                                                                                                               Authentication authentication,
+                                                                                                                                                               @AuthenticationPrincipal UserDetails userDetails) {
+        Long userId = currentUserId(authentication, userDetails);
+        queryService.handle(new GetLoanOperationByIdQuery(operationId, userId));
+        var schedule = operationScheduleRepository.findByOperationIdOrderByInstallmentNumberAsc(operationId).stream()
+                .map(this::toScheduleResource)
+                .toList();
+        return ResponseEntity.ok(schedule);
+    }
+
+    @GetMapping("/{operationId}/indicators")
+    @Operation(summary = "Get loan operation indicators")
+    public ResponseEntity<LoanOperationIndicatorsResource> getIndicators(@PathVariable Long operationId,
+                                                                          Authentication authentication,
+                                                                          @AuthenticationPrincipal UserDetails userDetails) {
+        Long userId = currentUserId(authentication, userDetails);
+        queryService.handle(new GetLoanOperationByIdQuery(operationId, userId));
+        var indicator = operationIndicatorRepository.findByOperationId(operationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Operation indicators not found"));
+        return ResponseEntity.ok(new LoanOperationIndicatorsResource(
+                indicator.getNpv(),
+                indicator.getIrrMonthly(),
+                indicator.getIrrAnnual(),
+                indicator.getEffectiveAnnualCost(),
+                indicator.getTotalInterest(),
+                indicator.getTotalInsurance(),
+                indicator.getTotalCharges(),
+                indicator.getTotalPayable(),
+                indicator.getNetDisbursement(),
+                indicator.getIrrConverged()
+        ));
+    }
+
+    @GetMapping("/{operationId}/audit")
+    @Operation(summary = "Get loan operation audit trail")
+    public ResponseEntity<List<LoanOperationAuditResource>> getAudit(@PathVariable Long operationId,
+                                                                     Authentication authentication,
+                                                                     @AuthenticationPrincipal UserDetails userDetails) {
+        Long userId = currentUserId(authentication, userDetails);
+        queryService.handle(new GetLoanOperationByIdQuery(operationId, userId));
+        var audits = operationAuditRepository.findByOperationIdOrderByCreatedAtAsc(operationId).stream()
+                .map(audit -> new LoanOperationAuditResource(
+                        audit.getAction(),
+                        audit.getDescription(),
+                        audit.getUserId(),
+                        audit.getCreatedAt()
+                ))
+                .toList();
+        return ResponseEntity.ok(audits);
+    }
+
+    @GetMapping("/summary")
+    @Operation(summary = "Get loan operation dashboard summary")
+    public ResponseEntity<LoanOperationDashboardSummaryResource> getSummary(Authentication authentication,
+                                                                            @AuthenticationPrincipal UserDetails userDetails) {
+        Long userId = currentUserId(authentication, userDetails);
+        long totalOperations = loanOperationRepository.countByUserId(userId);
+        Map<String, Long> countByStatus = Map.of(
+                OperationStatus.DRAFT.name(), loanOperationRepository.countByUserIdAndStatus(userId, OperationStatus.DRAFT),
+                OperationStatus.CALCULATED.name(), loanOperationRepository.countByUserIdAndStatus(userId, OperationStatus.CALCULATED),
+                OperationStatus.SAVED.name(), loanOperationRepository.countByUserIdAndStatus(userId, OperationStatus.SAVED)
+        );
+        List<LoanOperationDashboardRecentOperationResource> recentOperations = loanOperationRepository
+                .findTop5ByUserIdOrderByCreatedAtDesc(userId)
+                .stream()
+                .map(operation -> {
+                    var indicator = operationIndicatorRepository.findByOperationId(operation.getId()).orElse(null);
+                    return new LoanOperationDashboardRecentOperationResource(
+                            operation.getId(),
+                            operation.getClientSnapshotName(),
+                            operation.getVehicleSnapshotLabel(),
+                            operation.getOperationCurrency(),
+                            indicator != null ? indicator.getFinancedAmount() : null,
+                            indicator != null ? indicator.getNpv() : null,
+                            indicator != null ? indicator.getIrrAnnual() : null,
+                            operation.getStatus(),
+                            operation.getCreatedAt()
+                    );
+                })
+                .toList();
+        return ResponseEntity.ok(new LoanOperationDashboardSummaryResource(totalOperations, countByStatus, recentOperations));
+    }
+
     private Long currentUserId(Authentication authentication, UserDetails userDetails) {
         if (authentication == null || !authentication.isAuthenticated() || userDetails == null) {
             throw new BadCredentialsException("Unauthorized");
@@ -164,9 +296,29 @@ public class LoanOperationsController {
                                                          com.capitalcruise.platform.creditoperation.domain.model.aggregates.LoanOperation operation) {
         var charge = operationChargeRepository.findByOperationId(operationId).orElse(null);
         var indicator = operationIndicatorRepository.findByOperationId(operationId).orElse(null);
+        var schedule = operationScheduleRepository.findByOperationIdOrderByInstallmentNumberAsc(operationId);
         if (operation.getUserId() != null && !operation.getUserId().equals(userId)) {
             throw new BadCredentialsException("Unauthorized");
         }
-        return LoanOperationResourceFromEntityAssembler.toDetailResource(operation, charge, indicator);
+        return LoanOperationResourceFromEntityAssembler.toDetailResource(operation, charge, indicator, schedule);
+    }
+
+    private com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationCalculationScheduleResource toScheduleResource(OperationSchedule schedule) {
+        return new com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationCalculationScheduleResource(
+                schedule.getInstallmentNumber(),
+                schedule.getDueDate(),
+                schedule.getOpeningBalance(),
+                schedule.getPeriodicEffectiveRate(),
+                schedule.getGraceTypeApplied(),
+                schedule.getInterest(),
+                schedule.getAmortization(),
+                schedule.getBaseInstallment(),
+                schedule.getInsuranceAmount(),
+                schedule.getChargeAmount(),
+                schedule.getBalloonPortion(),
+                schedule.getTotalInstallment(),
+                schedule.getClosingBalance(),
+                schedule.getDebtorCashFlow()
+        );
     }
 }
