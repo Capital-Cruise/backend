@@ -49,7 +49,7 @@ public class OpenApiConfiguration {
     public GroupedOpenApi commercialOpenApi() {
         return GroupedOpenApi.builder()
                 .group("commercial")
-                .pathsToMatch("/api/v1/clients/**")
+                .pathsToMatch("/api/v1/clients/**", "/api/v1/vehicles/**")
                 .build();
     }
 }
