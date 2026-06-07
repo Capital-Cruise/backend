@@ -4,9 +4,11 @@ import com.capitalcruise.platform.iam.domain.model.entities.Role;
 import com.capitalcruise.platform.iam.domain.model.valueobjects.RoleName;
 import com.capitalcruise.platform.iam.infrastructure.persistence.jpa.repositories.RoleRepository;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
+@Order(0)
 public class RoleCatalogInitializer implements CommandLineRunner {
 
     private final RoleRepository roleRepository;
