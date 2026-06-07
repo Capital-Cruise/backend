@@ -46,7 +46,7 @@ public class SecurityConfiguration {
                                 response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden")))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/v3/api-docs.yaml").permitAll()
-                        .requestMatchers("/api/v1/authentication/**").permitAll()
+                        .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/profiles").hasRole("ADMIN")
                         .requestMatchers("/api/v1/profiles/**").hasAnyRole("USER", "ADMIN")
                         .anyRequest().authenticated()

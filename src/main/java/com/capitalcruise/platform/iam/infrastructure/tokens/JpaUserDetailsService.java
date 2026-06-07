@@ -6,6 +6,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -19,8 +20,13 @@ public class JpaUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) {
-        var user = userRepository.findByUsernameIgnoreCase(username)
+        var normalized = username == null ? null : username.trim().toLowerCase();
+        var user = userRepository.findByUsernameIgnoreCaseOrEmailIgnoreCase(normalized, normalized)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (!user.isActive()) {
+            throw new DisabledException("User is inactive");
+        }
 
         var authorities = user.roleNames().stream()
                 .map(SimpleGrantedAuthority::new)

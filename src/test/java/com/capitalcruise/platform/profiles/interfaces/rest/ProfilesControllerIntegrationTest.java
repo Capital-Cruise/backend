@@ -6,17 +6,25 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.capitalcruise.platform.iam.domain.model.aggregates.User;
+import com.capitalcruise.platform.iam.domain.model.entities.Role;
+import com.capitalcruise.platform.iam.domain.model.valueobjects.RoleName;
+import com.capitalcruise.platform.iam.infrastructure.persistence.jpa.repositories.RefreshTokenRepository;
+import com.capitalcruise.platform.iam.infrastructure.persistence.jpa.repositories.RoleRepository;
+import com.capitalcruise.platform.iam.infrastructure.persistence.jpa.repositories.UserRepository;
 import com.capitalcruise.platform.profiles.infrastructure.persistence.jpa.repositories.ProfileRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -34,14 +42,29 @@ class ProfilesControllerIntegrationTest {
     @Autowired
     private ProfileRepository profileRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
+
+    @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @BeforeEach
     void setUp() {
         profileRepository.deleteAll();
+        refreshTokenRepository.deleteAll();
+        userRepository.deleteAll();
+        roleRepository.deleteAll();
     }
 
     @Test
     void CreateProfileWhenPayloadIsValidShouldReturnCreatedAndPersistProfile() throws Exception {
-        String token = registerAndAuthenticate("admin1", "StrongPass123", "ROLE_ADMIN");
+        String token = loginAsAdmin("admin1", "StrongPass123");
 
         Map<String, Object> payload = profilePayload("Ana", "Rios", "ana@mail.com", "12345678", 1L);
 
@@ -58,7 +81,7 @@ class ProfilesControllerIntegrationTest {
 
     @Test
     void CreateProfileWhenEmailAlreadyExistsShouldReturnConflict() throws Exception {
-        String token = registerAndAuthenticate("admin2", "StrongPass123", "ROLE_ADMIN");
+        String token = loginAsAdmin("admin2", "StrongPass123");
 
         Map<String, Object> payload = profilePayload("Ana", "Rios", "ana@mail.com", "12345678", 1L);
 
@@ -77,7 +100,7 @@ class ProfilesControllerIntegrationTest {
 
     @Test
     void CreateProfileWhenPayloadIsInvalidShouldReturnBadRequest() throws Exception {
-        String token = registerAndAuthenticate("admin3", "StrongPass123", "ROLE_ADMIN");
+        String token = loginAsAdmin("admin3", "StrongPass123");
 
         Map<String, Object> payload = profilePayload("", "Rios", "invalid-email", "ABC", 1L);
 
@@ -91,7 +114,7 @@ class ProfilesControllerIntegrationTest {
 
     @Test
     void GetProfileWhenExistsShouldReturnOk() throws Exception {
-        String token = registerAndAuthenticate("admin4", "StrongPass123", "ROLE_ADMIN");
+        String token = loginAsAdmin("admin4", "StrongPass123");
 
         Map<String, Object> payload = profilePayload("Ana", "Rios", "ana-ok@mail.com", "12345678", 1L);
         var creationResponse = mockMvc.perform(post("/api/v1/profiles")
@@ -113,7 +136,7 @@ class ProfilesControllerIntegrationTest {
 
     @Test
     void GetProfileWhenMissingShouldReturnNotFound() throws Exception {
-        String token = registerAndAuthenticate("admin5", "StrongPass123", "ROLE_ADMIN");
+        String token = loginAsAdmin("admin5", "StrongPass123");
 
         mockMvc.perform(get("/api/v1/profiles/{profileId}", 9999)
                         .header("Authorization", "Bearer " + token))
@@ -123,7 +146,7 @@ class ProfilesControllerIntegrationTest {
 
     @Test
     void GetAllProfilesShouldReturnOk() throws Exception {
-        String token = registerAndAuthenticate("admin-list", "StrongPass123", "ROLE_ADMIN");
+        String token = loginAsAdmin("admin-list", "StrongPass123");
         profileRepository.save(com.capitalcruise.platform.profiles.domain.model.aggregates.Profile.create(
                 "Ana",
                 "Rios",
@@ -140,7 +163,7 @@ class ProfilesControllerIntegrationTest {
 
     @Test
     void GetProfileByEmailWhenExistsShouldReturnOk() throws Exception {
-        String token = registerAndAuthenticate("admin-by-email", "StrongPass123", "ROLE_ADMIN");
+        String token = loginAsAdmin("admin-by-email", "StrongPass123");
         profileRepository.save(com.capitalcruise.platform.profiles.domain.model.aggregates.Profile.create(
                 "Mariano",
                 "Oblitas",
@@ -156,32 +179,32 @@ class ProfilesControllerIntegrationTest {
                 .andExpect(jsonPath("$.firstName").value("Mariano"));
     }
 
-    private String registerAndAuthenticate(String username, String password, String role) throws Exception {
-        Map<String, Object> signUpPayload = new HashMap<>();
-        signUpPayload.put("username", username);
-        signUpPayload.put("password", password);
-        if (role != null) {
-            signUpPayload.put("role", role);
-        }
+    private String loginAsAdmin(String username, String password) throws Exception {
+        Role adminRole = roleRepository.findByName(RoleName.ROLE_ADMIN)
+                .orElseGet(() -> roleRepository.save(new Role(RoleName.ROLE_ADMIN)));
+        roleRepository.findByName(RoleName.ROLE_USER)
+                .orElseGet(() -> roleRepository.save(new Role(RoleName.ROLE_USER)));
 
-        mockMvc.perform(post("/api/v1/authentication/sign-up")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(signUpPayload)))
-                .andExpect(status().isCreated());
+        userRepository.save(User.register(
+                username,
+                username + "@capitalcruise.local",
+                passwordEncoder.encode(password),
+                Set.of(adminRole)
+        ));
 
-        Map<String, Object> signInPayload = Map.of(
-                "username", username,
+        Map<String, Object> loginPayload = Map.of(
+                "usernameOrEmail", username,
                 "password", password
         );
 
-        var signInResponse = mockMvc.perform(post("/api/v1/authentication/sign-in")
+        var loginResponse = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(signInPayload)))
+                        .content(objectMapper.writeValueAsString(loginPayload)))
                 .andExpect(status().isOk())
                 .andReturn();
 
-        JsonNode node = objectMapper.readTree(signInResponse.getResponse().getContentAsString());
-        return node.get("token").asText();
+        JsonNode node = objectMapper.readTree(loginResponse.getResponse().getContentAsString());
+        return node.get("accessToken").asText();
     }
 
     private Map<String, Object> profilePayload(String firstName,

@@ -11,6 +11,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
+import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -27,10 +28,19 @@ public class User extends AuditableModel {
     @Column(nullable = false, unique = true, length = 80)
     private String username;
 
+    @Column(nullable = false, unique = true, length = 120)
+    private String email;
+
     @Column(nullable = false, length = 120)
     private String passwordHash;
 
-    @ManyToMany(fetch = FetchType.EAGER, cascade = {CascadeType.MERGE, CascadeType.PERSIST})
+    @Column(name = "is_active", nullable = false)
+    private boolean active;
+
+    @Column(name = "last_login_at")
+    private Instant lastLoginAt;
+
+    @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.MERGE)
     @JoinTable(
             name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id"),
@@ -38,18 +48,33 @@ public class User extends AuditableModel {
     )
     private Set<Role> roles = new LinkedHashSet<>();
 
-    public User(String username, String passwordHash, Set<Role> roles) {
+    public User(String username, String email, String passwordHash, boolean active, Instant lastLoginAt, Set<Role> roles) {
         assignUsername(username);
+        assignEmail(email);
         assignPasswordHash(passwordHash);
+        this.active = active;
+        this.lastLoginAt = lastLoginAt;
         assignRoles(roles);
     }
 
+    public static User register(String username, String email, String passwordHash, Set<Role> roles) {
+        return new User(username, email, passwordHash, true, null, roles);
+    }
+
     public static User register(String username, String passwordHash, Set<Role> roles) {
-        return new User(username, passwordHash, roles);
+        return register(username, username + "@local", passwordHash, roles);
     }
 
     public Set<String> roleNames() {
         return roles.stream().map(role -> role.getName().name()).collect(Collectors.toSet());
+    }
+
+    public void markLogin(Instant loginAt) {
+        this.lastLoginAt = loginAt;
+    }
+
+    public void deactivate() {
+        this.active = false;
     }
 
     private void assignUsername(String username) {
@@ -57,6 +82,13 @@ public class User extends AuditableModel {
             throw new InvalidBusinessRuleException("Username cannot be empty");
         }
         this.username = username.trim().toLowerCase();
+    }
+
+    private void assignEmail(String email) {
+        if (email == null || email.isBlank()) {
+            throw new InvalidBusinessRuleException("Email cannot be empty");
+        }
+        this.email = email.trim().toLowerCase();
     }
 
     private void assignPasswordHash(String passwordHash) {

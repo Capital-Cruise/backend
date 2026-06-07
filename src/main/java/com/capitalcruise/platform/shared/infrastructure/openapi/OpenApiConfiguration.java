@@ -33,7 +33,7 @@ public class OpenApiConfiguration {
     public GroupedOpenApi iamOpenApi() {
         return GroupedOpenApi.builder()
                 .group("iam")
-                .pathsToMatch("/api/v1/authentication/**")
+                .pathsToMatch("/api/v1/auth/**")
                 .build();
     }
 

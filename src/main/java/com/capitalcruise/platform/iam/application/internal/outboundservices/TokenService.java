@@ -5,7 +5,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 public interface TokenService {
 
-    String generateToken(User user);
+    default String generateToken(User user) {
+        return generateAccessToken(user);
+    }
+
+    String generateAccessToken(User user);
 
     String extractUsername(String token);
 
