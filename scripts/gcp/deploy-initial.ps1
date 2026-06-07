@@ -4,10 +4,6 @@ $ErrorActionPreference = "Stop"
 $ProjectId = "capital-cruise"
 $Region = "us-east4"
 $ServiceName = "capital-cruise-backend"
-$Repository = "capital-cruise-backend"
-
-$Image = "us-east4-docker.pkg.dev/$ProjectId/$Repository/${ServiceName}:manual"
-
 function Assert-CommandExists {
     param([Parameter(Mandatory = $true)][string]$Name)
 
@@ -25,20 +21,6 @@ function Invoke-Gcloud {
     }
 }
 
-function Test-DockerReady {
-    if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
-        return $false
-    }
-
-    try {
-        & docker info *> $null
-        return $LASTEXITCODE -eq 0
-    }
-    catch {
-        return $false
-    }
-}
-
 Assert-CommandExists -Name "gcloud"
 
 $currentProject = (& gcloud config get-value project 2>$null | Out-String).Trim()
@@ -46,28 +28,10 @@ if ($currentProject -ne $ProjectId) {
     Invoke-Gcloud @("config", "set", "project", $ProjectId)
 }
 
-if (Test-DockerReady) {
-    Write-Host "Building Docker image locally"
-    Invoke-Gcloud @("auth", "configure-docker", "us-east4-docker.pkg.dev", "--quiet")
-    & docker build -t $Image .
-    if ($LASTEXITCODE -ne 0) {
-        throw "docker build failed"
-    }
-    & docker push $Image
-    if ($LASTEXITCODE -ne 0) {
-        throw "docker push failed"
-    }
-}
-else {
-    Write-Host "Docker is not available. Using Cloud Build."
-    Invoke-Gcloud @("auth", "configure-docker", "us-east4-docker.pkg.dev", "--quiet")
-    Invoke-Gcloud @("builds", "submit", "--tag", $Image, ".")
-}
-
 Invoke-Gcloud @("run", "deploy", $ServiceName,
     "--project=$ProjectId",
     "--region=$Region",
-    "--image=$Image",
+    "--source=.",
     "--platform=managed",
     "--allow-unauthenticated",
     "--service-account=capital-cruise-backend-runner@$ProjectId.iam.gserviceaccount.com",

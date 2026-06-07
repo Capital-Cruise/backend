@@ -672,9 +672,9 @@ class LoanOperationsControllerIntegrationTest {
         payload.put("downPaymentAmount", null);
         payload.put("downPaymentPercent", new BigDecimal("25.00"));
         payload.put("termMonths", 48);
-        Map<String, Object> rate = (Map<String, Object>) payload.get("rate");
+        Map<String, Object> rate = map(payload.get("rate"));
         rate.put("value", new BigDecimal("13.00"));
-        Map<String, Object> grace = (Map<String, Object>) payload.get("grace");
+        Map<String, Object> grace = map(payload.get("grace"));
         grace.put("graceType", "PARTIAL");
         grace.put("gracePeriods", 3);
 
@@ -752,12 +752,12 @@ class LoanOperationsControllerIntegrationTest {
         payload.put("downPaymentAmount", null);
         payload.put("downPaymentPercent", new BigDecimal("15.00"));
         payload.put("termMonths", 36);
-        Map<String, Object> rate = (Map<String, Object>) payload.get("rate");
+        Map<String, Object> rate = map(payload.get("rate"));
         rate.put("value", new BigDecimal("12.00"));
-        Map<String, Object> balloon = (Map<String, Object>) payload.get("balloon");
+        Map<String, Object> balloon = map(payload.get("balloon"));
         balloon.put("balloonAmount", new BigDecimal("7650.00"));
         balloon.put("balloonPercent", null);
-        Map<String, Object> charges = (Map<String, Object>) payload.get("charges");
+        Map<String, Object> charges = map(payload.get("charges"));
         charges.put("desgravamenRate", new BigDecimal("0.0200"));
         charges.put("vehicleInsuranceRate", new BigDecimal("0.0300"));
 
@@ -1210,5 +1210,10 @@ class LoanOperationsControllerIntegrationTest {
 
         payload.put("discountRate", discountRate);
         return payload;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> map(Object value) {
+        return (Map<String, Object>) value;
     }
 }

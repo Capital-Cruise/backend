@@ -15,8 +15,6 @@ env:
   PROJECT_NUMBER: "482841496133"
   REGION: us-east4
   SERVICE: capital-cruise-backend
-  REPOSITORY: capital-cruise-backend
-  IMAGE: us-east4-docker.pkg.dev/capital-cruise/capital-cruise-backend/capital-cruise-backend
   WORKLOAD_IDENTITY_PROVIDER: projects/482841496133/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider
   GCP_SERVICE_ACCOUNT: github-cloud-run-deployer@capital-cruise.iam.gserviceaccount.com
   RUNTIME_SERVICE_ACCOUNT: capital-cruise-backend-runner@capital-cruise.iam.gserviceaccount.com
@@ -48,38 +46,22 @@ jobs:
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v3
 
-      - name: Configure Docker auth
-        run: gcloud auth configure-docker us-east4-docker.pkg.dev --quiet
-
-      - name: Build Docker image
-        run: |
-          docker build \
-            -t "${IMAGE}:${GITHUB_SHA}" \
-            -t "${IMAGE}:latest" \
-            .
-
-      - name: Push Docker image
-        run: |
-          docker push "${IMAGE}:${GITHUB_SHA}"
-          docker push "${IMAGE}:latest"
-
       - name: Deploy to Cloud Run
-        id: deploy
-        uses: google-github-actions/deploy-cloudrun@v3
-        with:
-          service: ${{ env.SERVICE }}
-          region: ${{ env.REGION }}
-          image: ${{ env.IMAGE }}:${{ github.sha }}
-          flags: >-
-            --allow-unauthenticated
-            --service-account=${{ env.RUNTIME_SERVICE_ACCOUNT }}
-            --memory=1Gi
-            --cpu=1
-            --min-instances=0
-            --max-instances=2
-            --port=8080
-            --set-env-vars=SPRING_PROFILES_ACTIVE=prod
-            --set-secrets=DATABASE_URL=capital-cruise-database-url:latest,SUPABASE_DB_USERNAME=capital-cruise-supabase-db-username:latest,SUPABASE_DB_PASSWORD=capital-cruise-supabase-db-password:latest,JWT_SECRET=capital-cruise-jwt-secret:latest,JWT_EXPIRATION_MILLIS=capital-cruise-jwt-expiration-millis:latest,CAPITAL_CRUISE_ADMIN_PASSWORD=capital-cruise-admin-password:latest,FRONTEND_ALLOWED_ORIGINS=capital-cruise-frontend-allowed-origins:latest
+        run: |
+          gcloud run deploy "${SERVICE}" \
+            --project "${PROJECT_ID}" \
+            --region "${REGION}" \
+            --source . \
+            --platform managed \
+            --allow-unauthenticated \
+            --service-account "${RUNTIME_SERVICE_ACCOUNT}" \
+            --memory 1Gi \
+            --cpu 1 \
+            --min-instances 0 \
+            --max-instances 2 \
+            --port 8080 \
+            --set-env-vars SPRING_PROFILES_ACTIVE=prod \
+            --set-secrets DATABASE_URL=capital-cruise-database-url:latest,SUPABASE_DB_USERNAME=capital-cruise-supabase-db-username:latest,SUPABASE_DB_PASSWORD=capital-cruise-supabase-db-password:latest,JWT_SECRET=capital-cruise-jwt-secret:latest,JWT_EXPIRATION_MILLIS=capital-cruise-jwt-expiration-millis:latest,CAPITAL_CRUISE_ADMIN_PASSWORD=capital-cruise-admin-password:latest,FRONTEND_ALLOWED_ORIGINS=capital-cruise-frontend-allowed-origins:latest
 
       - name: Read service URL
         id: url
