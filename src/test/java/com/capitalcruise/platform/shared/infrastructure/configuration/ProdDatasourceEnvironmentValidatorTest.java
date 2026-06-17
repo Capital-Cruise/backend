@@ -30,4 +30,16 @@ class ProdDatasourceEnvironmentValidatorTest {
         assertThatCode(() -> validator.postProcessEnvironment(environment, new SpringApplication()))
                 .doesNotThrowAnyException();
     }
+
+    @Test
+    void shouldAcceptProdEnvironmentWhenCloudRunVariablesArePresent() {
+        MockEnvironment environment = new MockEnvironment();
+        environment.setActiveProfiles("prod");
+        environment.setProperty("DATABASE_URL", "jdbc:postgresql://aws-1-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require");
+        environment.setProperty("SUPABASE_DB_USERNAME", "postgres.cbkoepkuqcxiepeqasvr");
+        environment.setProperty("SUPABASE_DB_PASSWORD", "SupaCapitalCruisePA$$WORD");
+
+        assertThatCode(() -> validator.postProcessEnvironment(environment, new SpringApplication()))
+                .doesNotThrowAnyException();
+    }
 }

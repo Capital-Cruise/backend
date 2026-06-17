@@ -17,7 +17,7 @@ class ProdPropertiesContractTest {
         }
 
         assertThat(properties.getProperty("spring.datasource.url"))
-                .isEqualTo("jdbc:postgresql://aws-1-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require");
+                .isEqualTo("${DATABASE_URL:jdbc:postgresql://aws-1-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require}");
         assertThat(properties.getProperty("server.port")).isEqualTo("${PORT:8080}");
         assertThat(properties.getProperty("spring.datasource.username")).isEqualTo("${SUPABASE_DB_USERNAME}");
         assertThat(properties.getProperty("spring.datasource.password")).isEqualTo("${SUPABASE_DB_PASSWORD}");
