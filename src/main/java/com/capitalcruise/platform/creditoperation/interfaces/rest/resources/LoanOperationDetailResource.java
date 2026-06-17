@@ -47,6 +47,13 @@ public record LoanOperationDetailResource(
         Instant calculatedAt,
         Instant createdAt,
         Instant updatedAt,
+        BigDecimal initialChargesFinanced,
+        BigDecimal initialChargesPaidUpfront,
+        BigDecimal initialChargesWithheld,
+        BigDecimal cashAtSigning,
+        BigDecimal totalAdditionalCharges,
+        BigDecimal totalPeriodicCharges,
+        BigDecimal calculatedBalloonAmount,
         LoanOperationChargeResource charges,
         LoanOperationIndicatorResource indicator,
         List<LoanOperationCalculationScheduleResource> schedule

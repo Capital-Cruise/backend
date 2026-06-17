@@ -57,4 +57,27 @@ public class RefreshToken {
     public void revoke(Instant revokedAt) {
         this.revokedAt = revokedAt;
     }
+    public Long getId() {
+        return id;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public String getTokenHash() {
+        return tokenHash;
+    }
+
+    public Instant getExpiresAt() {
+        return expiresAt;
+    }
+
+    public Instant getRevokedAt() {
+        return revokedAt;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
 }

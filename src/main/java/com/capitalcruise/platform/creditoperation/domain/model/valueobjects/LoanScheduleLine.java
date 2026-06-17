@@ -13,6 +13,8 @@ public record LoanScheduleLine(
         BigDecimal amortization,
         BigDecimal baseInstallment,
         BigDecimal insuranceAmount,
+        BigDecimal additionalChargeAmount,
+        BigDecimal periodicChargesAmount,
         BigDecimal chargeAmount,
         BigDecimal balloonPortion,
         BigDecimal totalInstallment,

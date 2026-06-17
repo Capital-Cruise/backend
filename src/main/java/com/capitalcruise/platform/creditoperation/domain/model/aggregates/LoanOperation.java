@@ -240,4 +240,119 @@ public class LoanOperation extends AuditableModel {
     public void markSaved() {
         this.status = OperationStatus.SAVED;
     }
+    public Long getId() {
+        return super.getId();
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public Long getClientId() {
+        return clientId;
+    }
+
+    public Long getVehicleId() {
+        return vehicleId;
+    }
+
+    public OperationStatus getStatus() {
+        return status;
+    }
+
+    public Currency getOperationCurrency() {
+        return operationCurrency;
+    }
+
+    public BigDecimal getVehiclePrice() {
+        return vehiclePrice;
+    }
+
+    public BigDecimal getDownPaymentAmount() {
+        return downPaymentAmount;
+    }
+
+    public BigDecimal getDownPaymentPercent() {
+        return downPaymentPercent;
+    }
+
+    public Integer getTermMonths() {
+        return termMonths;
+    }
+
+    public LocalDate getStartDate() {
+        return startDate;
+    }
+
+    public OperationRateType getRateType() {
+        return rateType;
+    }
+
+    public BigDecimal getRateValue() {
+        return rateValue;
+    }
+
+    public OperationRatePeriod getRatePeriod() {
+        return ratePeriod;
+    }
+
+    public CapitalizationFrequency getCapitalizationFrequency() {
+        return capitalizationFrequency;
+    }
+
+    public GraceType getGraceType() {
+        return graceType;
+    }
+
+    public Integer getGracePeriods() {
+        return gracePeriods;
+    }
+
+    public BigDecimal getBalloonAmount() {
+        return balloonAmount;
+    }
+
+    public BigDecimal getBalloonPercent() {
+        return balloonPercent;
+    }
+
+    public ExchangeRateMode getExchangeRateMode() {
+        return exchangeRateMode;
+    }
+
+    public BigDecimal getExchangeRateValue() {
+        return exchangeRateValue;
+    }
+
+    public BigDecimal getDiscountRate() {
+        return discountRate;
+    }
+
+    public String getClientSnapshotName() {
+        return clientSnapshotName;
+    }
+
+    public DocumentType getClientSnapshotDocumentType() {
+        return clientSnapshotDocumentType;
+    }
+
+    public String getClientSnapshotDocumentNumber() {
+        return clientSnapshotDocumentNumber;
+    }
+
+    public String getVehicleSnapshotLabel() {
+        return vehicleSnapshotLabel;
+    }
+
+    public BigDecimal getVehicleSnapshotPrice() {
+        return vehicleSnapshotPrice;
+    }
+
+    public Currency getVehicleSnapshotCurrency() {
+        return vehicleSnapshotCurrency;
+    }
+
+    public Instant getCalculatedAt() {
+        return calculatedAt;
+    }
 }

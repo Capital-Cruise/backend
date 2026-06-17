@@ -42,6 +42,13 @@ public class LoanOperationCalculationResultResourceAssembler {
                         money(indicators.totalInterest()),
                         money(indicators.totalAmortization()),
                         money(indicators.totalInsurance()),
+                        money(indicators.initialChargesFinanced()),
+                        money(indicators.initialChargesPaidUpfront()),
+                        money(indicators.initialChargesWithheld()),
+                        money(indicators.cashAtSigning()),
+                        money(indicators.totalAdditionalCharges()),
+                        money(indicators.totalPeriodicCharges()),
+                        money(indicators.balloonAmount()),
                         money(indicators.totalCharges()),
                         money(indicators.totalPayable()),
                         money(indicators.npv()),
@@ -67,11 +74,14 @@ public class LoanOperationCalculationResultResourceAssembler {
                         money(line.amortization()),
                         money(line.baseInstallment()),
                         money(line.insuranceAmount()),
+                        money(line.additionalChargeAmount()),
+                        money(line.periodicChargesAmount()),
                         money(line.chargeAmount()),
                         money(line.balloonPortion()),
                         money(line.totalInstallment()),
                         money(line.closingBalance()),
-                        money(line.debtorCashFlow())
+                        money(line.debtorCashFlow()),
+                        List.of()
                 ))
                 .toList();
     }

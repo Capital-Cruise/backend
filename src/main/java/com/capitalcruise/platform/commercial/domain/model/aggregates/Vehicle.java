@@ -167,4 +167,39 @@ public class Vehicle extends AuditableModel {
         String normalized = value.trim();
         return normalized.isEmpty() ? null : normalized;
     }
+    public Long getId() {
+        return super.getId();
+    }
+
+    public String getBrand() {
+        return brand;
+    }
+
+    public String getModel() {
+        return model;
+    }
+
+    public Integer getYear() {
+        return year;
+    }
+
+    public VehicleType getVehicleType() {
+        return vehicleType;
+    }
+
+    public BigDecimal getCommercialPrice() {
+        return commercialPrice;
+    }
+
+    public Currency getCurrency() {
+        return currency;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
 }

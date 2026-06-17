@@ -62,4 +62,39 @@ public class OperationCharge {
         this.initialCharges = initialCharges;
         this.finalCharges = finalCharges;
     }
+    public Long getId() {
+        return id;
+    }
+
+    public Long getOperationId() {
+        return operationId;
+    }
+
+    public BigDecimal getDesgravamenRate() {
+        return desgravamenRate;
+    }
+
+    public BigDecimal getVehicleInsuranceRate() {
+        return vehicleInsuranceRate;
+    }
+
+    public BigDecimal getPeriodicCommission() {
+        return periodicCommission;
+    }
+
+    public BigDecimal getPostageFee() {
+        return postageFee;
+    }
+
+    public BigDecimal getAdministrativeFee() {
+        return administrativeFee;
+    }
+
+    public BigDecimal getInitialCharges() {
+        return initialCharges;
+    }
+
+    public BigDecimal getFinalCharges() {
+        return finalCharges;
+    }
 }

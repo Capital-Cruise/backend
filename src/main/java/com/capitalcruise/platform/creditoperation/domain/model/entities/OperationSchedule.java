@@ -56,6 +56,12 @@ public class OperationSchedule {
     @Column(name = "insurance_amount", precision = 19, scale = 2)
     private BigDecimal insuranceAmount;
 
+    @Column(name = "additional_charge_amount", precision = 19, scale = 2)
+    private BigDecimal additionalChargeAmount;
+
+    @Column(name = "periodic_charges_amount", precision = 19, scale = 2)
+    private BigDecimal periodicChargesAmount;
+
     @Column(name = "charge_amount", precision = 19, scale = 2)
     private BigDecimal chargeAmount;
 
@@ -81,6 +87,8 @@ public class OperationSchedule {
                              BigDecimal amortization,
                              BigDecimal baseInstallment,
                              BigDecimal insuranceAmount,
+                             BigDecimal additionalChargeAmount,
+                             BigDecimal periodicChargesAmount,
                              BigDecimal chargeAmount,
                              BigDecimal balloonPortion,
                              BigDecimal totalInstallment,
@@ -96,10 +104,117 @@ public class OperationSchedule {
         this.amortization = amortization;
         this.baseInstallment = baseInstallment;
         this.insuranceAmount = insuranceAmount;
+        this.additionalChargeAmount = additionalChargeAmount;
+        this.periodicChargesAmount = periodicChargesAmount;
         this.chargeAmount = chargeAmount;
         this.balloonPortion = balloonPortion;
         this.totalInstallment = totalInstallment;
         this.closingBalance = closingBalance;
         this.debtorCashFlow = debtorCashFlow;
+    }
+
+    public OperationSchedule(Long operationId,
+                             Integer installmentNumber,
+                             LocalDate dueDate,
+                             BigDecimal openingBalance,
+                             BigDecimal periodicEffectiveRate,
+                             GraceType graceTypeApplied,
+                             BigDecimal interest,
+                             BigDecimal amortization,
+                             BigDecimal baseInstallment,
+                             BigDecimal insuranceAmount,
+                             BigDecimal chargeAmount,
+                             BigDecimal balloonPortion,
+                             BigDecimal totalInstallment,
+                             BigDecimal closingBalance,
+                             BigDecimal debtorCashFlow) {
+        this(operationId,
+                installmentNumber,
+                dueDate,
+                openingBalance,
+                periodicEffectiveRate,
+                graceTypeApplied,
+                interest,
+                amortization,
+                baseInstallment,
+                insuranceAmount,
+                chargeAmount,
+                chargeAmount,
+                chargeAmount,
+                balloonPortion,
+                totalInstallment,
+                closingBalance,
+                debtorCashFlow);
+    }
+    public Long getId() {
+        return id;
+    }
+
+    public Long getOperationId() {
+        return operationId;
+    }
+
+    public Integer getInstallmentNumber() {
+        return installmentNumber;
+    }
+
+    public LocalDate getDueDate() {
+        return dueDate;
+    }
+
+    public BigDecimal getOpeningBalance() {
+        return openingBalance;
+    }
+
+    public BigDecimal getPeriodicEffectiveRate() {
+        return periodicEffectiveRate;
+    }
+
+    public GraceType getGraceTypeApplied() {
+        return graceTypeApplied;
+    }
+
+    public BigDecimal getInterest() {
+        return interest;
+    }
+
+    public BigDecimal getAmortization() {
+        return amortization;
+    }
+
+    public BigDecimal getBaseInstallment() {
+        return baseInstallment;
+    }
+
+    public BigDecimal getInsuranceAmount() {
+        return insuranceAmount;
+    }
+
+    public BigDecimal getAdditionalChargeAmount() {
+        return additionalChargeAmount;
+    }
+
+    public BigDecimal getPeriodicChargesAmount() {
+        return periodicChargesAmount;
+    }
+
+    public BigDecimal getChargeAmount() {
+        return chargeAmount;
+    }
+
+    public BigDecimal getBalloonPortion() {
+        return balloonPortion;
+    }
+
+    public BigDecimal getTotalInstallment() {
+        return totalInstallment;
+    }
+
+    public BigDecimal getClosingBalance() {
+        return closingBalance;
+    }
+
+    public BigDecimal getDebtorCashFlow() {
+        return debtorCashFlow;
     }
 }

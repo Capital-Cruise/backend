@@ -45,6 +45,27 @@ public class OperationIndicator {
     @Column(name = "total_insurance", precision = 19, scale = 2)
     private BigDecimal totalInsurance;
 
+    @Column(name = "initial_charges_financed", precision = 19, scale = 2)
+    private BigDecimal initialChargesFinanced;
+
+    @Column(name = "initial_charges_paid_upfront", precision = 19, scale = 2)
+    private BigDecimal initialChargesPaidUpfront;
+
+    @Column(name = "initial_charges_withheld", precision = 19, scale = 2)
+    private BigDecimal initialChargesWithheld;
+
+    @Column(name = "cash_at_signing", precision = 19, scale = 2)
+    private BigDecimal cashAtSigning;
+
+    @Column(name = "total_additional_charges", precision = 19, scale = 2)
+    private BigDecimal totalAdditionalCharges;
+
+    @Column(name = "total_periodic_charges", precision = 19, scale = 2)
+    private BigDecimal totalPeriodicCharges;
+
+    @Column(name = "balloon_amount", precision = 19, scale = 2)
+    private BigDecimal balloonAmount;
+
     @Column(name = "total_charges", precision = 19, scale = 2)
     private BigDecimal totalCharges;
 
@@ -81,6 +102,13 @@ public class OperationIndicator {
                               BigDecimal totalInterest,
                               BigDecimal totalAmortization,
                               BigDecimal totalInsurance,
+                              BigDecimal initialChargesFinanced,
+                              BigDecimal initialChargesPaidUpfront,
+                              BigDecimal initialChargesWithheld,
+                              BigDecimal cashAtSigning,
+                              BigDecimal totalAdditionalCharges,
+                              BigDecimal totalPeriodicCharges,
+                              BigDecimal balloonAmount,
                               BigDecimal totalCharges,
                               BigDecimal totalPayable,
                               BigDecimal npv,
@@ -97,6 +125,13 @@ public class OperationIndicator {
         this.totalInterest = totalInterest;
         this.totalAmortization = totalAmortization;
         this.totalInsurance = totalInsurance;
+        this.initialChargesFinanced = initialChargesFinanced;
+        this.initialChargesPaidUpfront = initialChargesPaidUpfront;
+        this.initialChargesWithheld = initialChargesWithheld;
+        this.cashAtSigning = cashAtSigning;
+        this.totalAdditionalCharges = totalAdditionalCharges;
+        this.totalPeriodicCharges = totalPeriodicCharges;
+        this.balloonAmount = balloonAmount;
         this.totalCharges = totalCharges;
         this.totalPayable = totalPayable;
         this.npv = npv;
@@ -105,5 +140,141 @@ public class OperationIndicator {
         this.effectiveAnnualCost = effectiveAnnualCost;
         this.irrConverged = irrConverged;
         this.calculationVersion = calculationVersion;
+    }
+
+    public OperationIndicator(Long operationId,
+                              BigDecimal financedAmount,
+                              BigDecimal netDisbursement,
+                              BigDecimal monthlyEffectiveRate,
+                              BigDecimal baseInstallment,
+                              BigDecimal totalInterest,
+                              BigDecimal totalAmortization,
+                              BigDecimal totalInsurance,
+                              BigDecimal totalCharges,
+                              BigDecimal totalPayable,
+                              BigDecimal npv,
+                              BigDecimal irrMonthly,
+                              BigDecimal irrAnnual,
+                              BigDecimal effectiveAnnualCost,
+                              Boolean irrConverged,
+                              String calculationVersion) {
+        this(operationId,
+                financedAmount,
+                netDisbursement,
+                monthlyEffectiveRate,
+                baseInstallment,
+                totalInterest,
+                totalAmortization,
+                totalInsurance,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                totalCharges,
+                totalPayable,
+                npv,
+                irrMonthly,
+                irrAnnual,
+                effectiveAnnualCost,
+                irrConverged,
+                calculationVersion);
+    }
+    public Long getId() {
+        return id;
+    }
+
+    public Long getOperationId() {
+        return operationId;
+    }
+
+    public BigDecimal getFinancedAmount() {
+        return financedAmount;
+    }
+
+    public BigDecimal getNetDisbursement() {
+        return netDisbursement;
+    }
+
+    public BigDecimal getMonthlyEffectiveRate() {
+        return monthlyEffectiveRate;
+    }
+
+    public BigDecimal getBaseInstallment() {
+        return baseInstallment;
+    }
+
+    public BigDecimal getTotalInterest() {
+        return totalInterest;
+    }
+
+    public BigDecimal getTotalAmortization() {
+        return totalAmortization;
+    }
+
+    public BigDecimal getTotalInsurance() {
+        return totalInsurance;
+    }
+
+    public BigDecimal getInitialChargesFinanced() {
+        return initialChargesFinanced;
+    }
+
+    public BigDecimal getInitialChargesPaidUpfront() {
+        return initialChargesPaidUpfront;
+    }
+
+    public BigDecimal getInitialChargesWithheld() {
+        return initialChargesWithheld;
+    }
+
+    public BigDecimal getCashAtSigning() {
+        return cashAtSigning;
+    }
+
+    public BigDecimal getTotalAdditionalCharges() {
+        return totalAdditionalCharges;
+    }
+
+    public BigDecimal getTotalPeriodicCharges() {
+        return totalPeriodicCharges;
+    }
+
+    public BigDecimal getBalloonAmount() {
+        return balloonAmount;
+    }
+
+    public BigDecimal getTotalCharges() {
+        return totalCharges;
+    }
+
+    public BigDecimal getTotalPayable() {
+        return totalPayable;
+    }
+
+    public BigDecimal getNpv() {
+        return npv;
+    }
+
+    public BigDecimal getIrrMonthly() {
+        return irrMonthly;
+    }
+
+    public BigDecimal getIrrAnnual() {
+        return irrAnnual;
+    }
+
+    public BigDecimal getEffectiveAnnualCost() {
+        return effectiveAnnualCost;
+    }
+
+    public Boolean getIrrConverged() {
+        return irrConverged;
+    }
+
+    public String getCalculationVersion() {
+        return calculationVersion;
     }
 }

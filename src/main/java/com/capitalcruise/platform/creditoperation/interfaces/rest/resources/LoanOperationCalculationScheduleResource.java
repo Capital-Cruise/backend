@@ -3,6 +3,7 @@ package com.capitalcruise.platform.creditoperation.interfaces.rest.resources;
 import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.GraceType;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 public record LoanOperationCalculationScheduleResource(
         Integer installmentNumber,
@@ -14,10 +15,13 @@ public record LoanOperationCalculationScheduleResource(
         BigDecimal amortization,
         BigDecimal baseInstallment,
         BigDecimal insuranceAmount,
+        BigDecimal additionalChargeAmount,
+        BigDecimal periodicChargesAmount,
         BigDecimal chargeAmount,
         BigDecimal balloonPortion,
         BigDecimal totalInstallment,
         BigDecimal closingBalance,
-        BigDecimal debtorCashFlow
+        BigDecimal debtorCashFlow,
+        List<LoanOperationChargeBreakdownResource> chargeBreakdown
 ) {
 }

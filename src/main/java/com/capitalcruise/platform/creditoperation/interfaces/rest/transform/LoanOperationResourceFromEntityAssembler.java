@@ -5,6 +5,7 @@ import com.capitalcruise.platform.creditoperation.domain.model.entities.Operatio
 import com.capitalcruise.platform.creditoperation.domain.model.entities.OperationIndicator;
 import com.capitalcruise.platform.creditoperation.domain.model.entities.OperationSchedule;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationChargeResource;
+import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationChargeBreakdownResource;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationDetailResource;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationIndicatorResource;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationCalculationScheduleResource;
@@ -66,6 +67,13 @@ public class LoanOperationResourceFromEntityAssembler {
                 operation.getCalculatedAt(),
                 operation.getCreatedAt(),
                 operation.getUpdatedAt(),
+                indicator != null ? indicator.getInitialChargesFinanced() : null,
+                indicator != null ? indicator.getInitialChargesPaidUpfront() : null,
+                indicator != null ? indicator.getInitialChargesWithheld() : null,
+                indicator != null ? indicator.getCashAtSigning() : null,
+                indicator != null ? indicator.getTotalAdditionalCharges() : null,
+                indicator != null ? indicator.getTotalPeriodicCharges() : null,
+                indicator != null ? indicator.getBalloonAmount() : null,
                 charge != null ? new LoanOperationChargeResource(
                         charge.getDesgravamenRate(),
                         charge.getVehicleInsuranceRate(),
@@ -83,6 +91,13 @@ public class LoanOperationResourceFromEntityAssembler {
                         indicator.getTotalInterest(),
                         indicator.getTotalAmortization(),
                         indicator.getTotalInsurance(),
+                        indicator.getInitialChargesFinanced(),
+                        indicator.getInitialChargesPaidUpfront(),
+                        indicator.getInitialChargesWithheld(),
+                        indicator.getCashAtSigning(),
+                        indicator.getTotalAdditionalCharges(),
+                        indicator.getTotalPeriodicCharges(),
+                        indicator.getBalloonAmount(),
                         indicator.getTotalCharges(),
                         indicator.getTotalPayable(),
                         indicator.getNpv(),
@@ -103,11 +118,14 @@ public class LoanOperationResourceFromEntityAssembler {
                                 schedule.getAmortization(),
                                 schedule.getBaseInstallment(),
                                 schedule.getInsuranceAmount(),
+                                schedule.getAdditionalChargeAmount(),
+                                schedule.getPeriodicChargesAmount(),
                                 schedule.getChargeAmount(),
                                 schedule.getBalloonPortion(),
                                 schedule.getTotalInstallment(),
                                 schedule.getClosingBalance(),
-                                schedule.getDebtorCashFlow()
+                                schedule.getDebtorCashFlow(),
+                                List.of()
                         ))
                         .toList()
         );

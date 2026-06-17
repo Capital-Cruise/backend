@@ -80,4 +80,20 @@ public class OpenApiConfiguration {
                 .pathsToMatch("/api/v1/operations/**")
                 .build();
     }
+
+    @Bean
+    public GroupedOpenApi loanQuotesOpenApi() {
+        return GroupedOpenApi.builder()
+                .group("Loan Quotes")
+                .pathsToMatch("/api/v1/loan-quotes/**")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi publicQuotesOpenApi() {
+        return GroupedOpenApi.builder()
+                .group("Public Quotes")
+                .pathsToMatch("/api/v1/public/quotes/**")
+                .build();
+    }
 }

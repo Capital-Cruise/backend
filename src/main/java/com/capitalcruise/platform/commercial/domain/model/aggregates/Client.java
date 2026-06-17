@@ -161,4 +161,43 @@ public class Client extends AuditableModel {
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
     }
+    public Long getId() {
+        return super.getId();
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public DocumentType getDocumentType() {
+        return documentType;
+    }
+
+    public String getDocumentNumber() {
+        return documentNumber;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public BigDecimal getMonthlyIncome() {
+        return monthlyIncome;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
 }

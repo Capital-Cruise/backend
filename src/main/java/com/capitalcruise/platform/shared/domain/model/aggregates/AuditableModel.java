@@ -28,5 +28,15 @@ public abstract class AuditableModel {
     @LastModifiedDate
     @Column(nullable = false)
     private Instant updatedAt;
-}
+    public Long getId() {
+        return id;
+    }
 
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+}

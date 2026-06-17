@@ -47,4 +47,27 @@ public class OperationAudit {
         this.description = description;
         this.userId = userId;
     }
+    public Long getId() {
+        return id;
+    }
+
+    public Long getOperationId() {
+        return operationId;
+    }
+
+    public String getAction() {
+        return action;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
 }

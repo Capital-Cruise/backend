@@ -5,6 +5,7 @@ import com.capitalcruise.platform.creditoperation.domain.model.queries.GetLoanOp
 import com.capitalcruise.platform.creditoperation.domain.model.commands.CalculateLoanOperationCommand;
 import com.capitalcruise.platform.creditoperation.domain.model.commands.DuplicateLoanOperationCommand;
 import com.capitalcruise.platform.creditoperation.domain.model.commands.SaveLoanOperationCommand;
+import com.capitalcruise.platform.creditoperation.application.internal.services.LoanQuoteApplicationService;
 import com.capitalcruise.platform.creditoperation.domain.services.LoanOperationCommandService;
 import com.capitalcruise.platform.creditoperation.domain.services.LoanOperationQueryService;
 import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.OperationStatus;
@@ -22,6 +23,10 @@ import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.Loan
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationIndicatorsResource;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationPageResource;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationRequestResource;
+import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanQuoteRequestResource;
+import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.PublicQuoteShareRequestResource;
+import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.PublicQuoteShareResource;
+import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.SavedLoanOperationResource;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.transform.LoanOperationPageResourceFromEntityAssembler;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.transform.LoanOperationRequestToCommandAssembler;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.transform.LoanOperationCalculationResultResourceAssembler;
@@ -52,6 +57,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import io.swagger.v3.oas.annotations.Hidden;
 
 @RestController
 @RequestMapping("/api/v1/operations")
@@ -66,6 +72,7 @@ public class LoanOperationsController {
     private final OperationIndicatorRepository operationIndicatorRepository;
     private final OperationAuditRepository operationAuditRepository;
     private final LoanOperationRepository loanOperationRepository;
+    private final LoanQuoteApplicationService loanQuoteApplicationService;
 
     public LoanOperationsController(LoanOperationCommandService commandService,
                                     LoanOperationQueryService queryService,
@@ -74,7 +81,8 @@ public class LoanOperationsController {
                                     OperationScheduleRepository operationScheduleRepository,
                                     OperationIndicatorRepository operationIndicatorRepository,
                                     OperationAuditRepository operationAuditRepository,
-                                    LoanOperationRepository loanOperationRepository) {
+                                    LoanOperationRepository loanOperationRepository,
+                                    LoanQuoteApplicationService loanQuoteApplicationService) {
         this.commandService = commandService;
         this.queryService = queryService;
         this.userRepository = userRepository;
@@ -83,18 +91,27 @@ public class LoanOperationsController {
         this.operationIndicatorRepository = operationIndicatorRepository;
         this.operationAuditRepository = operationAuditRepository;
         this.loanOperationRepository = loanOperationRepository;
+        this.loanQuoteApplicationService = loanQuoteApplicationService;
     }
 
     @PostMapping
-    @Operation(summary = "Create loan operation draft")
-    public ResponseEntity<LoanOperationDetailResource> create(@Valid @RequestBody LoanOperationRequestResource requestResource,
-                                                              Authentication authentication,
-                                                              @AuthenticationPrincipal UserDetails userDetails) {
+    @Operation(summary = "Create and save a loan quote as a final operation")
+    public ResponseEntity<SavedLoanOperationResource> create(@Valid @RequestBody LoanQuoteRequestResource requestResource,
+                                                             Authentication authentication,
+                                                             @AuthenticationPrincipal UserDetails userDetails) {
         Long userId = currentUserId(authentication, userDetails);
-        var command = LoanOperationRequestToCommandAssembler.toCreateCommand(userId, requestResource);
-        var operation = commandService.handle(command);
-        var detail = toDetailResource(operation.getId(), userId, operation);
-        return ResponseEntity.status(HttpStatus.CREATED).body(detail);
+        return ResponseEntity.status(HttpStatus.CREATED).body(loanQuoteApplicationService.saveOperation(userId, requestResource));
+    }
+
+    @PostMapping("/{operationId}/public-share")
+    @Operation(summary = "Create a public share for an operation")
+    public ResponseEntity<PublicQuoteShareResource> createPublicShare(@PathVariable Long operationId,
+                                                                      @Valid @RequestBody PublicQuoteShareRequestResource requestResource,
+                                                                      Authentication authentication,
+                                                                      @AuthenticationPrincipal UserDetails userDetails) {
+        Long userId = currentUserId(authentication, userDetails);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(loanQuoteApplicationService.createPublicShare(userId, operationId, requestResource));
     }
 
     @GetMapping
@@ -128,6 +145,8 @@ public class LoanOperationsController {
     }
 
     @PutMapping("/{operationId}")
+    @Deprecated
+    @Hidden
     @Operation(summary = "Update loan operation draft")
     public ResponseEntity<LoanOperationDetailResource> update(@PathVariable Long operationId,
                                                               @Valid @RequestBody LoanOperationRequestResource requestResource,
@@ -141,6 +160,8 @@ public class LoanOperationsController {
     }
 
     @PostMapping("/{operationId}/calculate")
+    @Deprecated
+    @Hidden
     @Operation(summary = "Calculate loan operation")
     public ResponseEntity<LoanOperationCalculationResultResource> calculate(@PathVariable Long operationId,
                                                                             Authentication authentication,
@@ -151,6 +172,8 @@ public class LoanOperationsController {
     }
 
     @PostMapping("/{operationId}/save")
+    @Deprecated
+    @Hidden
     @Operation(summary = "Save calculated loan operation")
     public ResponseEntity<LoanOperationDetailResource> save(@PathVariable Long operationId,
                                                             Authentication authentication,
@@ -161,6 +184,8 @@ public class LoanOperationsController {
     }
 
     @PostMapping("/{operationId}/duplicate")
+    @Deprecated
+    @Hidden
     @Operation(summary = "Duplicate loan operation")
     public ResponseEntity<LoanOperationDetailResource> duplicate(@PathVariable Long operationId,
                                                                  Authentication authentication,
@@ -199,6 +224,13 @@ public class LoanOperationsController {
                 indicator.getEffectiveAnnualCost(),
                 indicator.getTotalInterest(),
                 indicator.getTotalInsurance(),
+                indicator.getInitialChargesFinanced(),
+                indicator.getInitialChargesPaidUpfront(),
+                indicator.getInitialChargesWithheld(),
+                indicator.getCashAtSigning(),
+                indicator.getTotalAdditionalCharges(),
+                indicator.getTotalPeriodicCharges(),
+                indicator.getBalloonAmount(),
                 indicator.getTotalCharges(),
                 indicator.getTotalPayable(),
                 indicator.getNetDisbursement(),
@@ -310,11 +342,14 @@ public class LoanOperationsController {
                 schedule.getAmortization(),
                 schedule.getBaseInstallment(),
                 schedule.getInsuranceAmount(),
+                schedule.getAdditionalChargeAmount(),
+                schedule.getPeriodicChargesAmount(),
                 schedule.getChargeAmount(),
                 schedule.getBalloonPortion(),
                 schedule.getTotalInstallment(),
                 schedule.getClosingBalance(),
-                schedule.getDebtorCashFlow()
+                schedule.getDebtorCashFlow(),
+                List.of()
         );
     }
 }

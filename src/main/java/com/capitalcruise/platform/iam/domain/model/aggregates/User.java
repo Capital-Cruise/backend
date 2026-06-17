@@ -117,5 +117,31 @@ public class User extends AuditableModel {
         }
         this.roles = new LinkedHashSet<>(roles);
     }
-}
+    public Long getId() {
+        return super.getId();
+    }
 
+    public String getUsername() {
+        return username;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public Instant getLastLoginAt() {
+        return lastLoginAt;
+    }
+
+    public Set<Role> getRoles() {
+        return roles;
+    }
+}

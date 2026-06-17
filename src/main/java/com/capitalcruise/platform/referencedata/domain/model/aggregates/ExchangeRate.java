@@ -74,4 +74,31 @@ public class ExchangeRate {
     private String normalizeCurrency(String value) {
         return value == null ? null : value.trim().toUpperCase();
     }
+    public Long getId() {
+        return id;
+    }
+
+    public String getBaseCurrency() {
+        return baseCurrency;
+    }
+
+    public String getQuoteCurrency() {
+        return quoteCurrency;
+    }
+
+    public BigDecimal getRate() {
+        return rate;
+    }
+
+    public String getSource() {
+        return source;
+    }
+
+    public Instant getQuotedAt() {
+        return quotedAt;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
 }
