@@ -6,4 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PublicQuoteShareRepository extends JpaRepository<PublicQuoteShare, Long> {
     Optional<PublicQuoteShare> findByShareToken(String shareToken);
+
+    Optional<PublicQuoteShare> findFirstByOperationIdAndActiveTrueOrderByCreatedAtDesc(Long operationId);
 }

@@ -31,7 +31,6 @@ import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.Publ
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.PublicQuoteShareRequestResource;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.PublicQuoteShareResource;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.SavedLoanOperationResource;
-import com.capitalcruise.platform.shared.domain.exceptions.ForbiddenBusinessOperationException;
 import com.capitalcruise.platform.shared.domain.exceptions.InvalidBusinessRuleException;
 import com.capitalcruise.platform.shared.domain.exceptions.ResourceNotFoundException;
 import java.math.BigDecimal;
@@ -39,7 +38,6 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -147,15 +145,26 @@ public class LoanQuoteApplicationService {
     public PublicQuoteShareResource createPublicShare(Long userId, Long operationId, PublicQuoteShareRequestResource request) {
         LoanOperation operation = loanOperationRepository.findByIdAndUserId(operationId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Operation not found"));
+        var existingShare = publicQuoteShareRepository.findFirstByOperationIdAndActiveTrueOrderByCreatedAtDesc(operationId);
+        if (existingShare.isPresent()) {
+            return toPublicQuoteShareResource(existingShare.get(), request.expiresAt());
+        }
+
         String shareToken = "q_" + UUID.randomUUID().toString().replace("-", "").substring(0, 10);
         Instant createdAt = Instant.now();
         PublicQuoteShare share = new PublicQuoteShare(operation.getId(), shareToken, true, request.expiresAt(), createdAt, userId);
         publicQuoteShareRepository.save(share);
 
+        return toPublicQuoteShareResource(share, request.expiresAt());
+    }
+
+    private PublicQuoteShareResource toPublicQuoteShareResource(PublicQuoteShare share, Instant expiresAtOverride) {
+        String shareToken = share.getShareToken();
         String shareUrl = buildPublicUrl(shareToken);
         String apiUrl = buildBackendUrl(shareToken);
         String pdfUrl = apiUrl + "/pdf";
-        return new PublicQuoteShareResource(shareToken, shareUrl, apiUrl, shareUrl, pdfUrl, request.expiresAt());
+        Instant expiresAt = expiresAtOverride != null ? expiresAtOverride : share.getExpiresAt();
+        return new PublicQuoteShareResource(share.getShareToken(), shareUrl, apiUrl, shareUrl, pdfUrl, expiresAt);
     }
 
     @Transactional(readOnly = true)
