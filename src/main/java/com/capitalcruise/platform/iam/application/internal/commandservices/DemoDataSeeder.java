@@ -58,6 +58,7 @@ public class DemoDataSeeder implements CommandLineRunner {
     private static final PublicQuoteShareRequestResource OPEN_ENDED_SHARE = new PublicQuoteShareRequestResource(null);
 
     private final boolean seedEnabled;
+    private final boolean failFast;
     private final String adminUsername;
     private final String adminEmail;
     private final ClientCommandService clientCommandService;
@@ -72,6 +73,7 @@ public class DemoDataSeeder implements CommandLineRunner {
     private final UserRepository userRepository;
 
     public DemoDataSeeder(@Value("${capital-cruise.seed.demo-data-enabled:false}") boolean seedEnabled,
+                          @Value("${capital-cruise.seed.fail-fast:true}") boolean failFast,
                           @Value("${capital-cruise.admin.username:admin}") String adminUsername,
                           @Value("${capital-cruise.admin.email:admin@capitalcruise.local}") String adminEmail,
                           ClientCommandService clientCommandService,
@@ -85,6 +87,7 @@ public class DemoDataSeeder implements CommandLineRunner {
                           PublicQuoteShareRepository publicQuoteShareRepository,
                           UserRepository userRepository) {
         this.seedEnabled = seedEnabled;
+        this.failFast = failFast;
         this.adminUsername = adminUsername;
         this.adminEmail = adminEmail;
         this.clientCommandService = clientCommandService;
@@ -107,21 +110,28 @@ public class DemoDataSeeder implements CommandLineRunner {
             return;
         }
 
-        User admin = userRepository.findByUsernameIgnoreCaseOrEmailIgnoreCase(normalize(adminUsername), normalize(adminEmail))
-                .orElseThrow(() -> new IllegalStateException("Admin user must exist before demo data seeding"));
+        try {
+            User admin = userRepository.findByUsernameIgnoreCaseOrEmailIgnoreCase(normalize(adminUsername), normalize(adminEmail))
+                    .orElseThrow(() -> new IllegalStateException("Admin user must exist before demo data seeding"));
 
-        List<Client> clients = seedClients();
-        log.info("Demo clients ensured");
-        List<Vehicle> vehicles = seedVehicles();
-        log.info("Demo vehicles ensured");
+            List<Client> clients = seedClients();
+            log.info("Demo clients ensured");
+            List<Vehicle> vehicles = seedVehicles();
+            log.info("Demo vehicles ensured");
 
-        List<LoanOperation> operations = seedOperations(admin.getId(), clients, vehicles);
-        log.info("Demo operations ensured");
-        seedPublicShares(admin.getId(), operations);
-        log.info("Demo public shares ensured");
+            List<LoanOperation> operations = seedOperations(admin.getId(), clients, vehicles);
+            log.info("Demo operations ensured");
+            seedPublicShares(admin.getId(), operations);
+            log.info("Demo public shares ensured");
 
-        log.info("Demo seed completed: clients={}, vehicles={}, operations={}, shares={}",
-                clients.size(), vehicles.size(), operations.size(), publicQuoteShareRepository.count());
+            log.info("Demo seed completed: clients={}, vehicles={}, operations={}, shares={}",
+                    clients.size(), vehicles.size(), operations.size(), publicQuoteShareRepository.count());
+        } catch (RuntimeException exception) {
+            if (failFast) {
+                throw exception;
+            }
+            log.error("Demo data seeding failed but fail-fast is disabled", exception);
+        }
     }
 
     private List<Client> seedClients() {
