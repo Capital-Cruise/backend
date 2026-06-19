@@ -13,6 +13,7 @@ public record VehicleListItemResource(
         VehicleType vehicleType,
         BigDecimal commercialPrice,
         Currency currency,
+        String imageUrl,
         Instant createdAt
 ) {
 }

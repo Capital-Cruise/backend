@@ -34,6 +34,7 @@ public class VehicleResourceFromEntityAssembler {
                 vehicle.getVehicleType(),
                 vehicle.getCommercialPrice(),
                 vehicle.getCurrency(),
+                vehicle.getImageUrl(),
                 vehicle.getCreatedAt()
         );
     }
