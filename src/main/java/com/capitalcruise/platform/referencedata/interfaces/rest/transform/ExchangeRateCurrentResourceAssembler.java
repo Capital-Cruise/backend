@@ -14,7 +14,9 @@ public class ExchangeRateCurrentResourceAssembler {
                 snapshot.quote(),
                 snapshot.rate(),
                 snapshot.source(),
-                snapshot.timestamp()
+                snapshot.timestamp(),
+                snapshot.expiresAt(),
+                snapshot.stale()
         );
     }
 }

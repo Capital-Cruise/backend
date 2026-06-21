@@ -1,20 +1,18 @@
 package com.capitalcruise.platform.referencedata.application.internal.queryservices;
 
-import com.capitalcruise.platform.referencedata.application.internal.services.InternalExchangeRateProvider;
-import com.capitalcruise.platform.referencedata.domain.model.aggregates.ExchangeRate;
+import com.capitalcruise.platform.referencedata.application.internal.services.ExchangeRateProvider;
 import com.capitalcruise.platform.referencedata.domain.model.queries.GetCurrentExchangeRateQuery;
+import com.capitalcruise.platform.referencedata.domain.model.queries.GetExchangeRateConversionQuery;
 import com.capitalcruise.platform.referencedata.domain.model.queries.GetFinancialConventionsQuery;
 import com.capitalcruise.platform.referencedata.domain.model.queries.GetHelpTopicsQuery;
+import com.capitalcruise.platform.referencedata.domain.model.records.ExchangeRateConversionSnapshot;
 import com.capitalcruise.platform.referencedata.domain.model.records.ExchangeRateSnapshot;
 import com.capitalcruise.platform.referencedata.domain.model.resources.FinancialConventions;
 import com.capitalcruise.platform.referencedata.domain.model.resources.HelpTopic;
 import com.capitalcruise.platform.referencedata.domain.services.ReferenceDataQueryService;
-import com.capitalcruise.platform.referencedata.infrastructure.persistence.jpa.repositories.ExchangeRateRepository;
-import com.capitalcruise.platform.shared.domain.exceptions.InvalidBusinessRuleException;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
 @Service
 public class ReferenceDataQueryServiceImpl implements ReferenceDataQueryService {
@@ -45,12 +43,9 @@ public class ReferenceDataQueryServiceImpl implements ReferenceDataQueryService 
             new HelpTopic("net-disbursement", "Desembolso neto", "Monto efectivamente entregado al cliente.")
     );
 
-    private final ExchangeRateRepository exchangeRateRepository;
-    private final InternalExchangeRateProvider exchangeRateProvider;
+    private final ExchangeRateProvider exchangeRateProvider;
 
-    public ReferenceDataQueryServiceImpl(ExchangeRateRepository exchangeRateRepository,
-                                         InternalExchangeRateProvider exchangeRateProvider) {
-        this.exchangeRateRepository = exchangeRateRepository;
+    public ReferenceDataQueryServiceImpl(ExchangeRateProvider exchangeRateProvider) {
         this.exchangeRateProvider = exchangeRateProvider;
     }
 
@@ -63,36 +58,18 @@ public class ReferenceDataQueryServiceImpl implements ReferenceDataQueryService 
     @Override
     @Transactional
     public ExchangeRateSnapshot handle(GetCurrentExchangeRateQuery query) {
-        String base = normalizeCurrency(query.base());
-        String quote = normalizeCurrency(query.quote());
+        return exchangeRateProvider.resolveCurrent(query.base(), query.quote());
+    }
 
-        ExchangeRate current = exchangeRateRepository
-                .findTopByBaseCurrencyIgnoreCaseAndQuoteCurrencyIgnoreCaseOrderByQuotedAtDesc(base, quote)
-                .orElseGet(() -> exchangeRateRepository.save(exchangeRateProvider.resolveCurrent(base, quote)));
-
-        return new ExchangeRateSnapshot(
-                current.getBaseCurrency(),
-                current.getQuoteCurrency(),
-                current.getRate(),
-                current.getSource(),
-                current.getQuotedAt()
-        );
+    @Override
+    @Transactional
+    public ExchangeRateConversionSnapshot handle(GetExchangeRateConversionQuery query) {
+        return exchangeRateProvider.convert(query.amount(), query.from(), query.to());
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<HelpTopic> handle(GetHelpTopicsQuery query) {
         return HELP_TOPICS;
-    }
-
-    private String normalizeCurrency(String value) {
-        if (!StringUtils.hasText(value)) {
-            throw new InvalidBusinessRuleException("Currency is required");
-        }
-        String normalized = value.trim().toUpperCase();
-        if (!normalized.equals("PEN") && !normalized.equals("USD")) {
-            throw new InvalidBusinessRuleException("Unsupported currency: " + value);
-        }
-        return normalized;
     }
 }

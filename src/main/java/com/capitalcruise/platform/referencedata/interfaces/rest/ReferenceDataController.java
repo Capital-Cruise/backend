@@ -2,14 +2,17 @@ package com.capitalcruise.platform.referencedata.interfaces.rest;
 
 import com.capitalcruise.platform.referencedata.domain.model.commands.RefreshExchangeRateCommand;
 import com.capitalcruise.platform.referencedata.domain.model.queries.GetCurrentExchangeRateQuery;
+import com.capitalcruise.platform.referencedata.domain.model.queries.GetExchangeRateConversionQuery;
 import com.capitalcruise.platform.referencedata.domain.model.queries.GetFinancialConventionsQuery;
 import com.capitalcruise.platform.referencedata.domain.model.queries.GetHelpTopicsQuery;
 import com.capitalcruise.platform.referencedata.domain.services.ReferenceDataCommandService;
 import com.capitalcruise.platform.referencedata.domain.services.ReferenceDataQueryService;
+import com.capitalcruise.platform.referencedata.interfaces.rest.resources.ExchangeRateConversionResource;
 import com.capitalcruise.platform.referencedata.interfaces.rest.resources.ExchangeRateCurrentResource;
 import com.capitalcruise.platform.referencedata.interfaces.rest.resources.FinancialConventionsResource;
 import com.capitalcruise.platform.referencedata.interfaces.rest.resources.HelpTopicResource;
 import com.capitalcruise.platform.referencedata.interfaces.rest.resources.RefreshExchangeRateRequestResource;
+import com.capitalcruise.platform.referencedata.interfaces.rest.transform.ExchangeRateConversionResourceAssembler;
 import com.capitalcruise.platform.referencedata.interfaces.rest.transform.ExchangeRateCurrentResourceAssembler;
 import com.capitalcruise.platform.referencedata.interfaces.rest.transform.FinancialConventionsResourceAssembler;
 import com.capitalcruise.platform.referencedata.interfaces.rest.transform.HelpTopicResourceAssembler;
@@ -53,6 +56,16 @@ public class ReferenceDataController {
                                                                               @RequestParam String quote) {
         return ResponseEntity.ok(ExchangeRateCurrentResourceAssembler.toResource(
                 referenceDataQueryService.handle(new GetCurrentExchangeRateQuery(base, quote))
+        ));
+    }
+
+    @GetMapping("/exchange-rate/convert")
+    @Operation(summary = "Convert amount using current exchange rate")
+    public ResponseEntity<ExchangeRateConversionResource> convertExchangeRate(@RequestParam java.math.BigDecimal amount,
+                                                                              @RequestParam String from,
+                                                                              @RequestParam String to) {
+        return ResponseEntity.ok(ExchangeRateConversionResourceAssembler.toResource(
+                referenceDataQueryService.handle(new GetExchangeRateConversionQuery(amount, from, to))
         ));
     }
 

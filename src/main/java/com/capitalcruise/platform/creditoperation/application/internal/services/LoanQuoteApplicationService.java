@@ -31,6 +31,8 @@ import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.Publ
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.PublicQuoteShareRequestResource;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.PublicQuoteShareResource;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.SavedLoanOperationResource;
+import com.capitalcruise.platform.referencedata.domain.model.queries.GetCurrentExchangeRateQuery;
+import com.capitalcruise.platform.referencedata.domain.services.ReferenceDataQueryService;
 import com.capitalcruise.platform.shared.domain.exceptions.InvalidBusinessRuleException;
 import com.capitalcruise.platform.shared.domain.exceptions.ResourceNotFoundException;
 import java.math.BigDecimal;
@@ -58,6 +60,7 @@ public class LoanQuoteApplicationService {
     private final PublicQuoteShareRepository publicQuoteShareRepository;
     private final ClientRepository clientRepository;
     private final VehicleRepository vehicleRepository;
+    private final ReferenceDataQueryService referenceDataQueryService;
     private final String frontendUrl;
     private final String backendUrl;
 
@@ -72,6 +75,7 @@ public class LoanQuoteApplicationService {
                                        PublicQuoteShareRepository publicQuoteShareRepository,
                                        ClientRepository clientRepository,
                                        VehicleRepository vehicleRepository,
+                                       ReferenceDataQueryService referenceDataQueryService,
                                        @Value("${capital-cruise.public.frontend-url:}") String frontendUrl,
                                        @Value("${capital-cruise.public.backend-url:}") String backendUrl) {
         this.calculator = calculator;
@@ -85,6 +89,7 @@ public class LoanQuoteApplicationService {
         this.publicQuoteShareRepository = publicQuoteShareRepository;
         this.clientRepository = clientRepository;
         this.vehicleRepository = vehicleRepository;
+        this.referenceDataQueryService = referenceDataQueryService;
         this.frontendUrl = frontendUrl;
         this.backendUrl = backendUrl;
     }
@@ -120,7 +125,7 @@ public class LoanQuoteApplicationService {
                 computation.balloonAmount(),
                 request.balloon().balloonPercent(),
                 request.exchangeRate().mode(),
-                request.exchangeRate().value(),
+                resolveExchangeRateValue(request),
                 request.financialEvaluation().discountRateValue(),
                 client.fullName(),
                 client.getDocumentType(),
@@ -423,6 +428,25 @@ public class LoanQuoteApplicationService {
             throw new InvalidBusinessRuleException("Vehicle details do not match the selected vehicle");
         }
         return vehicle;
+    }
+
+    private BigDecimal resolveExchangeRateValue(LoanQuoteRequestResource request) {
+        if (request.exchangeRate() == null || request.exchangeRate().mode() == null) {
+            throw new InvalidBusinessRuleException("Exchange rate mode is required");
+        }
+        if (request.exchangeRate().mode() == com.capitalcruise.platform.creditoperation.domain.model.valueobjects.ExchangeRateMode.MANUAL) {
+            if (request.exchangeRate().value() == null || request.exchangeRate().value().signum() <= 0) {
+                throw new InvalidBusinessRuleException("Exchange rate value is required for manual mode");
+            }
+            return request.exchangeRate().value().setScale(4, RoundingMode.HALF_UP);
+        }
+        if (request.loan() == null || request.loan().operationCurrency() == null || request.vehicle() == null || request.vehicle().currency() == null) {
+            throw new InvalidBusinessRuleException("Exchange rate currencies are required for automatic mode");
+        }
+        return referenceDataQueryService.handle(new GetCurrentExchangeRateQuery(
+                request.loan().operationCurrency().name(),
+                request.vehicle().currency().name()
+        )).rate().setScale(4, RoundingMode.HALF_UP);
     }
 
     private String normalize(String value) {
