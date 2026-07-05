@@ -13,6 +13,8 @@ import com.capitalcruise.platform.creditoperation.domain.model.entities.Operatio
 import com.capitalcruise.platform.creditoperation.infrastructure.persistence.jpa.repositories.OperationChargeRepository;
 import com.capitalcruise.platform.creditoperation.infrastructure.persistence.jpa.repositories.OperationAuditRepository;
 import com.capitalcruise.platform.creditoperation.infrastructure.persistence.jpa.repositories.OperationIndicatorRepository;
+import com.capitalcruise.platform.creditoperation.infrastructure.persistence.jpa.repositories.OperationInitialChargeRepository;
+import com.capitalcruise.platform.creditoperation.infrastructure.persistence.jpa.repositories.OperationPeriodicChargeRepository;
 import com.capitalcruise.platform.creditoperation.infrastructure.persistence.jpa.repositories.OperationScheduleRepository;
 import com.capitalcruise.platform.creditoperation.infrastructure.persistence.jpa.repositories.LoanOperationRepository;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationCalculationResultResource;
@@ -70,6 +72,8 @@ public class LoanOperationsController {
     private final OperationChargeRepository operationChargeRepository;
     private final OperationScheduleRepository operationScheduleRepository;
     private final OperationIndicatorRepository operationIndicatorRepository;
+    private final OperationInitialChargeRepository operationInitialChargeRepository;
+    private final OperationPeriodicChargeRepository operationPeriodicChargeRepository;
     private final OperationAuditRepository operationAuditRepository;
     private final LoanOperationRepository loanOperationRepository;
     private final LoanQuoteApplicationService loanQuoteApplicationService;
@@ -80,6 +84,8 @@ public class LoanOperationsController {
                                     OperationChargeRepository operationChargeRepository,
                                     OperationScheduleRepository operationScheduleRepository,
                                     OperationIndicatorRepository operationIndicatorRepository,
+                                    OperationInitialChargeRepository operationInitialChargeRepository,
+                                    OperationPeriodicChargeRepository operationPeriodicChargeRepository,
                                     OperationAuditRepository operationAuditRepository,
                                     LoanOperationRepository loanOperationRepository,
                                     LoanQuoteApplicationService loanQuoteApplicationService) {
@@ -89,6 +95,8 @@ public class LoanOperationsController {
         this.operationChargeRepository = operationChargeRepository;
         this.operationScheduleRepository = operationScheduleRepository;
         this.operationIndicatorRepository = operationIndicatorRepository;
+        this.operationInitialChargeRepository = operationInitialChargeRepository;
+        this.operationPeriodicChargeRepository = operationPeriodicChargeRepository;
         this.operationAuditRepository = operationAuditRepository;
         this.loanOperationRepository = loanOperationRepository;
         this.loanQuoteApplicationService = loanQuoteApplicationService;
@@ -324,11 +332,13 @@ public class LoanOperationsController {
                                                          com.capitalcruise.platform.creditoperation.domain.model.aggregates.LoanOperation operation) {
         var charge = operationChargeRepository.findByOperationId(operationId).orElse(null);
         var indicator = operationIndicatorRepository.findByOperationId(operationId).orElse(null);
+        var initialCharges = operationInitialChargeRepository.findByOperationIdOrderByIdAsc(operationId);
+        var periodicCharges = operationPeriodicChargeRepository.findByOperationIdOrderByIdAsc(operationId);
         var schedule = operationScheduleRepository.findByOperationIdOrderByInstallmentNumberAsc(operationId);
         if (operation.getUserId() != null && !operation.getUserId().equals(userId)) {
             throw new BadCredentialsException("Unauthorized");
         }
-        return LoanOperationResourceFromEntityAssembler.toDetailResource(operation, charge, indicator, schedule);
+        return LoanOperationResourceFromEntityAssembler.toDetailResource(operation, charge, indicator, initialCharges, periodicCharges, schedule);
     }
 
     private com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationCalculationScheduleResource toScheduleResource(OperationSchedule schedule) {

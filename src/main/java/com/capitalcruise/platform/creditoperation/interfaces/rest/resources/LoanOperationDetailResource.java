@@ -1,11 +1,17 @@
 package com.capitalcruise.platform.creditoperation.interfaces.rest.resources;
 
 import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.CapitalizationFrequency;
+import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.ChargeFrequency;
+import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.ChargeRateBase;
+import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.ChargeType;
 import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.ExchangeRateMode;
+import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.FinancingMode;
 import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.GraceType;
+import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.InitialChargeCode;
 import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.OperationRatePeriod;
 import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.OperationRateType;
 import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.OperationStatus;
+import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.PeriodicChargeCode;
 import com.capitalcruise.platform.commercial.domain.model.valueobjects.Currency;
 import com.capitalcruise.platform.commercial.domain.model.valueobjects.DocumentType;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -54,8 +60,34 @@ public record LoanOperationDetailResource(
         BigDecimal totalAdditionalCharges,
         BigDecimal totalPeriodicCharges,
         BigDecimal calculatedBalloonAmount,
+        List<InitialChargeResource> initialCharges,
+        List<PeriodicChargeResource> periodicCharges,
         LoanOperationChargeResource charges,
         LoanOperationIndicatorResource indicator,
         List<LoanOperationCalculationScheduleResource> schedule
 ) {
+    public record InitialChargeResource(
+            InitialChargeCode code,
+            String label,
+            BigDecimal amount,
+            Currency currency,
+            FinancingMode financingMode,
+            Boolean taxable
+    ) {
+    }
+
+    public record PeriodicChargeResource(
+            PeriodicChargeCode code,
+            String label,
+            ChargeType chargeType,
+            BigDecimal amount,
+            Currency currency,
+            BigDecimal ratePercent,
+            ChargeRateBase rateBase,
+            ChargeFrequency frequency,
+            Boolean appliesDuringGrace,
+            Integer fromInstallment,
+            Integer toInstallment
+    ) {
+    }
 }

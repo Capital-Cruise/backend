@@ -2,7 +2,9 @@ package com.capitalcruise.platform.creditoperation.interfaces.rest.transform;
 
 import com.capitalcruise.platform.creditoperation.domain.model.aggregates.LoanOperation;
 import com.capitalcruise.platform.creditoperation.domain.model.entities.OperationCharge;
+import com.capitalcruise.platform.creditoperation.domain.model.entities.OperationInitialCharge;
 import com.capitalcruise.platform.creditoperation.domain.model.entities.OperationIndicator;
+import com.capitalcruise.platform.creditoperation.domain.model.entities.OperationPeriodicCharge;
 import com.capitalcruise.platform.creditoperation.domain.model.entities.OperationSchedule;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationChargeResource;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationChargeBreakdownResource;
@@ -37,6 +39,8 @@ public class LoanOperationResourceFromEntityAssembler {
     public static LoanOperationDetailResource toDetailResource(LoanOperation operation,
                                                                OperationCharge charge,
                                                                OperationIndicator indicator,
+                                                               List<OperationInitialCharge> initialCharges,
+                                                               List<OperationPeriodicCharge> periodicCharges,
                                                                List<OperationSchedule> schedules) {
         return new LoanOperationDetailResource(
                 operation.getId(),
@@ -77,6 +81,31 @@ public class LoanOperationResourceFromEntityAssembler {
                 indicator != null ? indicator.getTotalAdditionalCharges() : null,
                 indicator != null ? indicator.getTotalPeriodicCharges() : null,
                 indicator != null ? indicator.getBalloonAmount() : null,
+                initialCharges.stream()
+                        .map(initialCharge -> new LoanOperationDetailResource.InitialChargeResource(
+                                initialCharge.getCode(),
+                                initialCharge.getLabel(),
+                                initialCharge.getAmount(),
+                                initialCharge.getCurrency(),
+                                initialCharge.getFinancingMode(),
+                                initialCharge.getTaxable()
+                        ))
+                        .toList(),
+                periodicCharges.stream()
+                        .map(periodicCharge -> new LoanOperationDetailResource.PeriodicChargeResource(
+                                periodicCharge.getCode(),
+                                periodicCharge.getLabel(),
+                                periodicCharge.getChargeType(),
+                                periodicCharge.getAmount(),
+                                periodicCharge.getCurrency(),
+                                periodicCharge.getRatePercent(),
+                                periodicCharge.getRateBase(),
+                                periodicCharge.getFrequency(),
+                                periodicCharge.getAppliesDuringGrace(),
+                                periodicCharge.getFromInstallment(),
+                                periodicCharge.getToInstallment()
+                        ))
+                        .toList(),
                 charge != null ? new LoanOperationChargeResource(
                         charge.getDesgravamenRate(),
                         charge.getVehicleInsuranceRate(),
