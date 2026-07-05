@@ -422,9 +422,7 @@ public class LoanQuoteApplicationService {
         if (!normalize(vehicle.getBrand()).equals(normalize(vehicleResource.brand()))
                 || !normalize(vehicle.getModel()).equals(normalize(vehicleResource.model()))
                 || !vehicle.getYear().equals(vehicleResource.year())
-                || vehicle.getVehicleType() != vehicleResource.vehicleType()
-                || vehicle.getCommercialPrice().compareTo(vehicleResource.vehiclePrice()) != 0
-                || vehicle.getCurrency() != vehicleResource.currency()) {
+                || vehicle.getVehicleType() != vehicleResource.vehicleType()) {
             throw new InvalidBusinessRuleException("Vehicle details do not match the selected vehicle");
         }
         return vehicle;
