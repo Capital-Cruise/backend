@@ -39,6 +39,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -145,7 +147,7 @@ public class LoanQuoteApplicationService {
         persistIndicator(operation.getId(), computation);
         operationAuditRepository.save(new OperationAudit(operation.getId(), "SAVED_FROM_QUOTE", "Operation saved from quote", userId));
 
-        return new SavedLoanOperationResource(operation.getId(), QuoteStatus.SAVED, toSavedResource(computation));
+        return new SavedLoanOperationResource(operation.getId(), QuoteStatus.SAVED, null);
     }
 
     @Transactional
@@ -189,9 +191,19 @@ public class LoanQuoteApplicationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Operation not found"));
         var indicator = operationIndicatorRepository.findByOperationId(operation.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Operation indicators not found"));
-        var schedules = operationScheduleRepository.findByOperationIdOrderByInstallmentNumberAsc(operation.getId()).stream()
+        var initialCharges = operationInitialChargeRepository.findByOperationIdOrderByIdAsc(operation.getId());
+        var periodicCharges = operationPeriodicChargeRepository.findByOperationIdOrderByIdAsc(operation.getId());
+        var schedules = operationScheduleRepository.findByOperationIdOrderByInstallmentNumberAsc(operation.getId());
+        var scheduleIds = schedules.stream()
+                .map(OperationSchedule::getId)
+                .toList();
+        Map<Long, List<OperationScheduleChargeBreakdown>> breakdownsByScheduleId = operationScheduleChargeBreakdownRepository
+                .findByScheduleIdInOrderByScheduleIdAscIdAsc(scheduleIds)
+                .stream()
+                .collect(Collectors.groupingBy(OperationScheduleChargeBreakdown::getScheduleId));
+        var scheduleResources = schedules.stream()
                 .map(schedule -> {
-                    var breakdowns = operationScheduleChargeBreakdownRepository.findByScheduleIdOrderByIdAsc(schedule.getId()).stream()
+                    var breakdowns = breakdownsByScheduleId.getOrDefault(schedule.getId(), List.of()).stream()
                             .map(breakdown -> new LoanQuoteCalculationResource.LoanQuoteChargeBreakdownResource(
                                     breakdown.getCode(),
                                     breakdown.getLabel(),
@@ -219,6 +231,11 @@ public class LoanQuoteApplicationService {
                     );
                 })
                 .toList();
+        BigDecimal estimatedMonthlyPayment = scheduleResources.stream()
+                .map(LoanQuoteCalculationResource.LoanQuoteScheduleLineResource::totalInstallment)
+                .filter(amount -> amount != null && amount.signum() > 0)
+                .findFirst()
+                .orElse(null);
 
         return new PublicQuoteResource(
                 share.getShareToken(),
@@ -227,19 +244,67 @@ public class LoanQuoteApplicationService {
                 operation.getClientSnapshotName(),
                 operation.getVehicleSnapshotLabel(),
                 operation.getOperationCurrency(),
+                operation.getCalculatedAt(),
                 operation.getVehiclePrice(),
                 operation.getDownPaymentAmount(),
+                operation.getDownPaymentPercent(),
                 indicator.getFinancedAmount(),
                 indicator.getCashAtSigning(),
+                operation.getTermMonths(),
+                operation.getStartDate(),
+                estimatedMonthlyPayment,
+                indicator.getBalloonAmount(),
+                operation.getBalloonPercent(),
+                indicator.getTotalPayable(),
+                indicator.getTotalInterest(),
                 indicator.getTotalInsurance(),
                 indicator.getTotalAdditionalCharges(),
                 indicator.getTotalPeriodicCharges(),
+                indicator.getInitialChargesFinanced(),
+                indicator.getInitialChargesPaidUpfront(),
+                indicator.getInitialChargesWithheld(),
                 indicator.getEffectiveAnnualCost(),
                 indicator.getNpv(),
                 indicator.getIrrMonthly(),
                 indicator.getIrrAnnual(),
-                operation.getCalculatedAt(),
-                schedules
+                indicator.getMonthlyEffectiveRate(),
+                operation.getRateType(),
+                operation.getRateValue(),
+                operation.getRatePeriod(),
+                operation.getCapitalizationFrequency(),
+                operation.getDiscountRate(),
+                operation.getGraceType(),
+                operation.getGracePeriods(),
+                "FRANCES",
+                "ORDINARY",
+                "MONTHLY",
+                "COMMERCIAL_30_360",
+                initialCharges.stream()
+                        .map(initialCharge -> new PublicQuoteResource.InitialChargeResource(
+                                initialCharge.getCode(),
+                                initialCharge.getLabel(),
+                                initialCharge.getAmount().setScale(2, RoundingMode.HALF_UP),
+                                initialCharge.getCurrency(),
+                                initialCharge.getFinancingMode(),
+                                initialCharge.getTaxable()
+                        ))
+                        .toList(),
+                periodicCharges.stream()
+                        .map(periodicCharge -> new PublicQuoteResource.PeriodicChargeResource(
+                                periodicCharge.getCode(),
+                                periodicCharge.getLabel(),
+                                periodicCharge.getChargeType(),
+                                periodicCharge.getAmount(),
+                                periodicCharge.getCurrency(),
+                                periodicCharge.getRatePercent(),
+                                periodicCharge.getRateBase(),
+                                periodicCharge.getFrequency(),
+                                periodicCharge.getAppliesDuringGrace(),
+                                periodicCharge.getFromInstallment(),
+                                periodicCharge.getToInstallment()
+                        ))
+                        .toList(),
+                scheduleResources
         );
     }
 
