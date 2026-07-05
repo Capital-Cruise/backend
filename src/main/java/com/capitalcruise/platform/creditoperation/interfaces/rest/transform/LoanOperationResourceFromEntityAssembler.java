@@ -1,17 +1,22 @@
 package com.capitalcruise.platform.creditoperation.interfaces.rest.transform;
 
+import com.capitalcruise.platform.commercial.domain.model.valueobjects.Currency;
 import com.capitalcruise.platform.creditoperation.domain.model.aggregates.LoanOperation;
 import com.capitalcruise.platform.creditoperation.domain.model.entities.OperationCharge;
 import com.capitalcruise.platform.creditoperation.domain.model.entities.OperationInitialCharge;
 import com.capitalcruise.platform.creditoperation.domain.model.entities.OperationIndicator;
 import com.capitalcruise.platform.creditoperation.domain.model.entities.OperationPeriodicCharge;
 import com.capitalcruise.platform.creditoperation.domain.model.entities.OperationSchedule;
+import com.capitalcruise.platform.creditoperation.domain.model.valueobjects.ChargeType;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationChargeResource;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationChargeBreakdownResource;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationDetailResource;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationIndicatorResource;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationCalculationScheduleResource;
 import com.capitalcruise.platform.creditoperation.interfaces.rest.resources.LoanOperationSummaryResource;
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.util.List;
 
 public class LoanOperationResourceFromEntityAssembler {
@@ -42,6 +47,9 @@ public class LoanOperationResourceFromEntityAssembler {
                                                                List<OperationInitialCharge> initialCharges,
                                                                List<OperationPeriodicCharge> periodicCharges,
                                                                List<OperationSchedule> schedules) {
+        Currency operationCurrency = operation.getOperationCurrency();
+        BigDecimal exchangeRateValue = operation.getExchangeRateValue();
+
         return new LoanOperationDetailResource(
                 operation.getId(),
                 operation.getUserId(),
@@ -85,7 +93,9 @@ public class LoanOperationResourceFromEntityAssembler {
                         .map(initialCharge -> new LoanOperationDetailResource.InitialChargeResource(
                                 initialCharge.getCode(),
                                 initialCharge.getLabel(),
-                                initialCharge.getAmount(),
+                                convertAmount(initialCharge.getAmount(), initialCharge.getCurrency(), operationCurrency, exchangeRateValue),
+                                operationCurrency,
+                                money(initialCharge.getAmount()),
                                 initialCharge.getCurrency(),
                                 initialCharge.getFinancingMode(),
                                 initialCharge.getTaxable()
@@ -96,8 +106,18 @@ public class LoanOperationResourceFromEntityAssembler {
                                 periodicCharge.getCode(),
                                 periodicCharge.getLabel(),
                                 periodicCharge.getChargeType(),
-                                periodicCharge.getAmount(),
-                                periodicCharge.getCurrency(),
+                                periodicCharge.getChargeType() == ChargeType.FIXED_AMOUNT
+                                        ? convertAmount(periodicCharge.getAmount(), periodicCharge.getCurrency(), operationCurrency, exchangeRateValue)
+                                        : periodicCharge.getAmount(),
+                                periodicCharge.getChargeType() == ChargeType.FIXED_AMOUNT
+                                        ? operationCurrency
+                                        : periodicCharge.getCurrency(),
+                                periodicCharge.getChargeType() == ChargeType.FIXED_AMOUNT
+                                        ? money(periodicCharge.getAmount())
+                                        : null,
+                                periodicCharge.getChargeType() == ChargeType.FIXED_AMOUNT
+                                        ? periodicCharge.getCurrency()
+                                        : null,
                                 periodicCharge.getRatePercent(),
                                 periodicCharge.getRateBase(),
                                 periodicCharge.getFrequency(),
@@ -161,5 +181,28 @@ public class LoanOperationResourceFromEntityAssembler {
                         ))
                         .toList()
         );
+    }
+
+    private static BigDecimal convertAmount(BigDecimal amount, Currency fromCurrency, Currency toCurrency, BigDecimal usdPenExchangeRate) {
+        if (amount == null) {
+            return null;
+        }
+        if (fromCurrency == null || toCurrency == null || fromCurrency == toCurrency) {
+            return money(amount);
+        }
+        if (usdPenExchangeRate == null || usdPenExchangeRate.signum() <= 0) {
+            return money(amount);
+        }
+        if (fromCurrency == Currency.USD && toCurrency == Currency.PEN) {
+            return money(amount.multiply(usdPenExchangeRate, MathContext.DECIMAL128));
+        }
+        if (fromCurrency == Currency.PEN && toCurrency == Currency.USD) {
+            return amount.divide(usdPenExchangeRate, 2, RoundingMode.HALF_UP);
+        }
+        return money(amount);
+    }
+
+    private static BigDecimal money(BigDecimal value) {
+        return value == null ? null : value.setScale(2, RoundingMode.HALF_UP);
     }
 }

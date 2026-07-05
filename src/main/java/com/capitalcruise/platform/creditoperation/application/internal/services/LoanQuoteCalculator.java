@@ -295,7 +295,7 @@ public class LoanQuoteCalculator {
         }
         return request.additionalCharges().initialCharges().stream()
                 .filter(charge -> charge.financingMode() == financingMode)
-                .map(charge -> money(charge.amount()))
+                .map(charge -> convertToOperationCurrency(charge.amount(), charge.currency(), request))
                 .reduce(ZERO, (left, right) -> left.add(right, MoneyMath.DECIMAL_CONTEXT));
     }
 
@@ -361,7 +361,7 @@ public class LoanQuoteCalculator {
                 continue;
             }
 
-            BigDecimal amount = resolvePeriodicChargeAmount(charge, openingBalance, principalFinanced, vehiclePrice, balloonAmount);
+            BigDecimal amount = resolvePeriodicChargeAmount(request, charge, openingBalance, principalFinanced, vehiclePrice, balloonAmount);
             breakdown.add(new LoanQuoteChargeBreakdownResource(
                     charge.code().name(),
                     charge.label(),
@@ -383,13 +383,14 @@ public class LoanQuoteCalculator {
         );
     }
 
-    private BigDecimal resolvePeriodicChargeAmount(LoanQuoteRequestResource.PeriodicChargeResource charge,
+    private BigDecimal resolvePeriodicChargeAmount(LoanQuoteRequestResource request,
+                                                   LoanQuoteRequestResource.PeriodicChargeResource charge,
                                                    BigDecimal openingBalance,
                                                    BigDecimal principalFinanced,
                                                    BigDecimal vehiclePrice,
                                                    BigDecimal balloonAmount) {
         if (charge.chargeType() == ChargeType.FIXED_AMOUNT) {
-            BigDecimal amount = money(charge.amount());
+            BigDecimal amount = convertToOperationCurrency(charge.amount(), charge.currency(), request);
             if (charge.frequency() == ChargeFrequency.ANNUAL_PRORATED_MONTHLY) {
                 return amount.divide(new BigDecimal("12"), MoneyMath.DECIMAL_CONTEXT);
             }
@@ -411,6 +412,28 @@ public class LoanQuoteCalculator {
             amount = amount.divide(new BigDecimal("12"), MoneyMath.DECIMAL_CONTEXT);
         }
         return amount;
+    }
+
+    private BigDecimal convertToOperationCurrency(BigDecimal amount, Currency fromCurrency, LoanQuoteRequestResource request) {
+        if (amount == null) {
+            return ZERO;
+        }
+        Currency toCurrency = request.loan().operationCurrency();
+        if (fromCurrency == null || toCurrency == null || fromCurrency == toCurrency) {
+            return money(amount);
+        }
+
+        BigDecimal usdPenExchangeRate = request.exchangeRate() == null ? null : request.exchangeRate().value();
+        if (usdPenExchangeRate == null || usdPenExchangeRate.signum() <= 0) {
+            throw new IllegalArgumentException("Exchange rate value is required for currency conversion");
+        }
+        if (fromCurrency == Currency.USD && toCurrency == Currency.PEN) {
+            return money(amount.multiply(usdPenExchangeRate, MoneyMath.DECIMAL_CONTEXT));
+        }
+        if (fromCurrency == Currency.PEN && toCurrency == Currency.USD) {
+            return amount.divide(usdPenExchangeRate, 2, RoundingMode.HALF_UP);
+        }
+        return money(amount);
     }
 
     private ChargeCategory categorize(PeriodicChargeCode code) {

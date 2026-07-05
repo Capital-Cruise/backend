@@ -71,6 +71,8 @@ public record LoanOperationDetailResource(
             String label,
             BigDecimal amount,
             Currency currency,
+            BigDecimal originalAmount,
+            Currency originalCurrency,
             FinancingMode financingMode,
             Boolean taxable
     ) {
@@ -82,6 +84,8 @@ public record LoanOperationDetailResource(
             ChargeType chargeType,
             BigDecimal amount,
             Currency currency,
+            BigDecimal originalAmount,
+            Currency originalCurrency,
             BigDecimal ratePercent,
             ChargeRateBase rateBase,
             ChargeFrequency frequency,

@@ -96,13 +96,15 @@ public class LoanQuoteApplicationService {
 
     @Transactional(readOnly = true)
     public LoanQuoteCalculationResource calculatePreview(LoanQuoteRequestResource request) {
-        ComputationResult computation = calculator.calculate(request);
+        LoanQuoteRequestResource calculationRequest = withResolvedExchangeRate(request);
+        ComputationResult computation = calculator.calculate(calculationRequest);
         return toPreviewResource(computation);
     }
 
     @Transactional
     public SavedLoanOperationResource saveOperation(Long userId, LoanQuoteRequestResource request) {
-        ComputationResult computation = calculator.calculate(request);
+        LoanQuoteRequestResource calculationRequest = withResolvedExchangeRate(request);
+        ComputationResult computation = calculator.calculate(calculationRequest);
         Client client = resolveClient(request.client().clientId(), request.client().displayName());
         Vehicle vehicle = resolveVehicle(request.vehicle());
 
@@ -124,8 +126,8 @@ public class LoanQuoteApplicationService {
                 request.grace().gracePeriods(),
                 computation.balloonAmount(),
                 request.balloon().balloonPercent(),
-                request.exchangeRate().mode(),
-                resolveExchangeRateValue(request),
+                calculationRequest.exchangeRate().mode(),
+                calculationRequest.exchangeRate().value(),
                 request.financialEvaluation().discountRateValue(),
                 client.fullName(),
                 client.getDocumentType(),
@@ -428,6 +430,21 @@ public class LoanQuoteApplicationService {
         return vehicle;
     }
 
+    private LoanQuoteRequestResource withResolvedExchangeRate(LoanQuoteRequestResource request) {
+        BigDecimal exchangeRateValue = resolveExchangeRateValue(request);
+        return new LoanQuoteRequestResource(
+                request.client(),
+                request.vehicle(),
+                request.loan(),
+                request.rate(),
+                request.grace(),
+                request.balloon(),
+                request.additionalCharges(),
+                request.financialEvaluation(),
+                new LoanQuoteRequestResource.ExchangeRateResource(request.exchangeRate().mode(), exchangeRateValue)
+        );
+    }
+
     private BigDecimal resolveExchangeRateValue(LoanQuoteRequestResource request) {
         if (request.exchangeRate() == null || request.exchangeRate().mode() == null) {
             throw new InvalidBusinessRuleException("Exchange rate mode is required");
@@ -438,12 +455,9 @@ public class LoanQuoteApplicationService {
             }
             return request.exchangeRate().value().setScale(4, RoundingMode.HALF_UP);
         }
-        if (request.loan() == null || request.loan().operationCurrency() == null || request.vehicle() == null || request.vehicle().currency() == null) {
-            throw new InvalidBusinessRuleException("Exchange rate currencies are required for automatic mode");
-        }
         return referenceDataQueryService.handle(new GetCurrentExchangeRateQuery(
-                request.loan().operationCurrency().name(),
-                request.vehicle().currency().name()
+                "USD",
+                "PEN"
         )).rate().setScale(4, RoundingMode.HALF_UP);
     }
 
